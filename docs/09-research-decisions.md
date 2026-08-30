@@ -118,13 +118,14 @@ La encuesta es una señal para formular hipótesis, no validación de producto.
 
 En publicaciones de su [founder, Cielo Dahy](https://ar.linkedin.com/in/cielo-dahy), se reportaron, entre otros hitos:
 
-- Inicio como una hoja de cálculo.
-- Más de 6.000 usuarios a las dos semanas.
-- Más de 10.000 personas en menos de un mes.
-- Base de más de 200 startups argentinas.
-- 6.700 aperturas de perfiles, 127 alertas y resultados iniciales de una función de matching en publicaciones posteriores.
+- Inicio como una hoja de cálculo y producto construido durante un fin de semana.
+- Inventario cargado antes del lanzamiento: perfiles de startups conocidas, vacantes vigentes y enlaces directos de postulación.
+- Más de 500 usuarios activos en menos de tres días y 2.000 personas durante la primera semana.
+- 610 personas hicieron clic en `Aplicar` y se generaron más de 1.900 clics de aplicación durante esa primera semana, reportados como crecimiento orgánico sin anuncios.
+- Más de 6.000 usuarios a las dos semanas y más de 10.000 personas en menos de un mes.
+- La función de matching con IA apareció después de que el directorio ya había demostrado demanda.
 
-Estas son cifras reportadas por la founder y útiles como señal de distribución; no fueron auditadas independientemente y no deben presentarse como evidencia propia de LinkUp. El aprendizaje importante es la combinación de utilidad inmediata, foco geográfico, inventario y distribución founder-led.
+Estas son cifras reportadas por la founder y útiles como señal de distribución; no fueron auditadas independientemente y no deben presentarse como evidencia propia de LinkUp. El aprendizaje importante no es copiar la IA: es lanzar con inventario útil, eliminar la fragmentación, entregar tráfico medible a las startups y convertir cada nueva vacante en una pieza de distribución founder-led.
 
 ### Work at a Startup
 
@@ -155,7 +156,7 @@ La frase `LinkedIn killer` se usa solo como ambición interna para discutir cate
 ### D-002 — Posicionamiento público
 
 - **Estado:** Aceptada.
-- **Decisión:** presentarse como red de primeras oportunidades y talento emergente de Latinoamérica.
+- **Decisión:** presentarse como el lugar para descubrir quién está construyendo y dónde sumarse, sin una etiqueta nacional o regional en la marca.
 - **No usar:** `LinkedIn killer` como encabezado o promesa.
 
 ### D-003 — Segmento inicial
@@ -167,19 +168,19 @@ La frase `LinkedIn killer` se usa solo como ambición interna para discutir cate
 ### D-004 — Geografía
 
 - **Estado:** Aceptada.
-- **Decisión:** operar primero en Bolivia, indexar oferta boliviana y remota accesible desde Latinoamérica, y conservar ambición regional.
+- **Decisión:** concentrar la operación inicial donde el equipo tiene relaciones y capacidad de curación, pero mantener el posicionamiento público geográficamente neutro.
 
 ### D-005 — Entrada de producto
 
 - **Estado:** Aceptada.
 - **Decisión:** `/` es la aplicación, no una landing.
-- **Contenido:** encabezado compacto, búsqueda, dos pestañas y lista.
+- **Contenido:** encabezado compacto, búsqueda, filtros y una lista unificada.
 
-### D-006 — Pestaña inicial
+### D-006 — Una sola colección pública
 
 - **Estado:** Aceptada.
-- **Decisión:** `Startups` es la pestaña predeterminada; `Oportunidades` es equivalente y visible.
-- **Revisión:** cambiar solo con evidencia de comportamiento, conservando rutas directas.
+- **Decisión:** la startup es la unidad principal y sus oportunidades aparecen anidadas en la misma fila; industria, área, tipo y modalidad son filtros.
+- **Razón:** separar ambos objetos obliga a la persona a decidir dónde buscar y rompe la relación que vuelve útil al directorio.
 
 ### D-007 — Autenticación diferida
 
@@ -319,8 +320,8 @@ Los asuntos O-001 a O-012 no son excusa para ampliar el MVP. Tienen una puerta y
 | A-008 | Proyectos pagados crean una primera experiencia útil | Media | 3–5 proyectos y siguiente match | impagos, baja finalización o evidencia irrelevante |
 | A-009 | Bolivia puede concentrar liquidez inicial | Media | densidad por rol y respuesta | oferta insuficiente incluso con red activa |
 | A-010 | Oferta remota amplía sin diluir relevancia | Media | búsquedas, elegibilidad y respuesta | vacantes no aceptan realmente al segmento |
-| A-011 | Las dos pestañas son comprensibles | Alta | prueba de tareas | personas no entienden dónde buscar vacantes |
-| A-012 | `Startups` debe ser predeterminada | Media | intención y retorno por pestaña | oportunidades domina tareas repetidas |
+| A-011 | La lista unificada permite entender startup y roles sin explicación | Media | prueba de tareas | las personas no distinguen perfil de empresa y vacante |
+| A-012 | Los filtros cubren la intención sin categorías de navegación | Media | consultas y tareas | las personas necesitan vistas separadas para completar tareas |
 | A-013 | Curación manual es sostenible durante piloto | Media | horas por entidad/resultado | cola o costo crece antes de aprender |
 | A-014 | Los resultados pueden verificarse sin fricción excesiva | Baja-media | tasa y tiempo de confirmación | partes no responden o discrepan frecuentemente |
 

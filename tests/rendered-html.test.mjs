@@ -32,11 +32,13 @@ test("renders the directory as the product entry point", async () => {
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
-  assert.match(html, /<title>Startups y oportunidades de Latinoamérica — LinkUp<\/title>/i);
-  assert.match(html, /Encuentra dónde empezar/);
-  assert.match(html, /Buscar por nombre, industria o ciudad/);
-  assert.match(html, />Startups</);
-  assert.match(html, />Oportunidades</);
+  assert.match(html, /<title>Descubre startups y oportunidades — LinkUp<\/title>/i);
+  assert.match(html, /Descubre quién está construyendo y dónde puedes sumarte/);
+  assert.match(html, /Busca una startup, industria o rol/);
+  assert.match(html, /Con oportunidades/);
+  assert.match(html, /Práctica de producto/);
+  assert.doesNotMatch(html, /role="tablist"/i);
+  assert.doesNotMatch(html, /Latam|Latinoamérica|Bolivia/i);
   assert.match(html, /Menta/);
   assert.match(html, /registros actuales son demostrativos/i);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|react-loading-skeleton/i);
@@ -82,6 +84,6 @@ test("keeps the historical mark and canonical product definition", async () => {
     readFile(new URL("../README.md", import.meta.url), "utf8"),
     access(new URL("../public/linkup-mark.png", import.meta.url)),
   ]);
-  assert.match(readme, /buscador de startups y oportunidades de Latinoamérica/i);
+  assert.match(readme, /directorio que reúne startups y sus oportunidades en una sola búsqueda/i);
   assert.match(readme, /La página principal no es una landing de marketing/i);
 });

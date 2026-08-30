@@ -1,17 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Onest } from "next/font/google";
+import { Archivo_Narrow, Manrope } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 
-const onest = Onest({
-  variable: "--font-onest",
+const manrope = Manrope({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
+const archivoNarrow = Archivo_Narrow({
+  variable: "--font-condensed",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["500", "600", "700"],
 });
 
 function requestOrigin(requestHeaders: Headers) {
@@ -27,7 +28,7 @@ function requestOrigin(requestHeaders: Headers) {
 
 export async function generateMetadata(): Promise<Metadata> {
   const origin = requestOrigin(await headers());
-  const description = "Busca startups y oportunidades en Latinoamérica. Convierte tu primera experiencia en una señal para la siguiente.";
+  const description = "Descubre startups, entiende qué construyen y encuentra dónde puedes sumarte.";
   return {
     metadataBase: new URL(origin),
     title: {
@@ -43,14 +44,14 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       locale: "es_419",
       siteName: "LinkUp",
-      title: "LinkUp — Startups y oportunidades de Latinoamérica",
+      title: "LinkUp — Descubre dónde sumarte",
       description,
       url: origin,
-      images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "LinkUp — Startups y oportunidades de Latinoamérica" }],
+      images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "LinkUp — Descubre dónde sumarte" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "LinkUp — Startups y oportunidades de Latinoamérica",
+      title: "LinkUp — Descubre dónde sumarte",
       description,
       images: [`${origin}/og.png`],
     },
@@ -60,7 +61,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#FFFFFF",
+  themeColor: "#FBFCFD",
   colorScheme: "light",
 };
 
@@ -71,7 +72,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${onest.variable} ${plexMono.variable}`}>
+      <body className={`${manrope.variable} ${archivoNarrow.variable}`}>
         {children}
       </body>
     </html>

@@ -214,8 +214,8 @@ Se utiliza Full Text Search para relevancia lingüística y `pg_trgm` para error
 
 Orden de procesamiento:
 
-1. Interpretar pestaña.
-2. Normalizar texto y filtros.
+1. Normalizar texto y filtros.
+2. Resolver coincidencias entre startup y sus oportunidades.
 3. Aplicar estado público y vigencia.
 4. Aplicar filtros estructurados.
 5. Calcular relevancia textual.
@@ -237,7 +237,7 @@ Normalización inicial:
 - La primera respuesta devuelve hasta 20 filas.
 - La API usa cursor opaco; no expone puntuaciones ni depende de `offset` para listas cambiantes.
 - Cada orden tiene desempate estable por `id`.
-- El cursor incorpora pestaña, consulta normalizada, filtros, orden y versión del ranking; si alguno cambia, se reinicia.
+- El cursor incorpora consulta normalizada, filtros, orden y versión del ranking; si alguno cambia, se reinicia.
 - La interfaz usa `Cargar más`, no scroll infinito automático, y conserva posición al volver de un detalle.
 - No se muestra un total exacto si calcularlo retrasa la búsqueda; `20+ resultados` es preferible a una cifra desactualizada.
 - El máximo por petición es 50 y se aplican límites de abuso.

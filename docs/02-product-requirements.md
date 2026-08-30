@@ -72,7 +72,7 @@ La acción `Agregar` se muestra como enlace secundario o dentro del menú; no co
 
 | Ruta | Acceso | Trabajo principal |
 |---|---|---|
-| `/` | Público | Buscar y alternar entre startups y oportunidades |
+| `/` | Público | Buscar startups y sus oportunidades en una lista unificada |
 | `/startups` | Público | Explorar directorio con filtros |
 | `/startups/[slug]` | Público | Entender una startup y ver sus oportunidades |
 | `/oportunidades` | Público | Explorar oportunidades con filtros |
@@ -91,28 +91,29 @@ La acción `Agregar` se muestra como enlace secundario o dentro del menú; no co
 
 ## Pantalla inicial
 
-La raíz no incluye hero, métricas promocionales, categorías destacadas ni bloques editoriales.
+La raíz no incluye landing, métricas promocionales, categorías destacadas ni bloques editoriales. Su encabezado breve orienta la búsqueda y da paso inmediato al directorio.
 
 ```text
 LinkUp                                      Ingresar
 
-[ Buscar startups u oportunidades...              ]
+[ Buscar una startup, industria o rol...          ]
 
-[ Startups ]  [ Oportunidades ]              [Filtros]
+[ Con oportunidades ]                        [Filtros]
 
 Nombre de startup
 Descripción de una línea
-Industria · Etapa · Ubicación                  3 oportunidades
+Industria · Etapa · Ubicación
+ └─ Product intern · Pasantía · Híbrido
 ────────────────────────────────────────────────────────
 Nombre de startup
 Descripción de una línea
-Industria · Modalidad                          Contratando
+Industria · Modalidad
 ```
 
 Reglas:
 
-- La pestaña predeterminada es `Startups` hasta que la densidad de oportunidades justifique probar otra opción.
-- La selección se guarda localmente para siguientes visitas.
+- Startups y oportunidades no compiten como categorías de navegación: cada startup contiene sus roles activos dentro de la misma fila.
+- Industria, área, tipo y modalidad se resuelven como filtros sobre una única colección.
 - En móvil, la búsqueda ocupa una fila completa y los filtros se abren en una hoja inferior.
 - Las filas son enlaces completos; no se llenan de botones.
 - No se muestran cifras si no son reales y auditables.
@@ -121,8 +122,8 @@ Reglas:
 
 ### Explorar sin cuenta
 
-1. El visitante abre `/` y ve startups.
-2. Busca o cambia a oportunidades.
+1. El visitante abre `/` y ve el directorio unificado.
+2. Busca por startup, industria o rol.
 3. Aplica filtros opcionales.
 4. Abre un resultado.
 5. Comparte o visita la fuente.
@@ -197,7 +198,7 @@ No existe un wizard largo previo a explorar. El indicador de completitud explica
 
 ### Descubrimiento
 
-- **DISC-001:** cualquier visitante puede alternar entre startups y oportunidades sin autenticarse.
+- **DISC-001:** cualquier visitante puede buscar startups y sus oportunidades en la misma lista sin autenticarse.
 - **DISC-002:** la búsqueda acepta texto libre y conserva filtros en la URL.
 - **DISC-003:** los filtros iniciales de startup son país, ciudad, industria, etapa, tamaño, modalidad y `contratando`.
 - **DISC-004:** los filtros iniciales de oportunidad son tipo, área, nivel, modalidad, país aceptado, dedicación, condición económica y fecha.
@@ -214,7 +215,7 @@ No existe un wizard largo previo a explorar. El indicador de completitud explica
 - **ORG-004:** los datos importados y los declarados conservan procedencia separada.
 - **ORG-005:** la verificación nunca se deduce únicamente de tener un logotipo o sitio web.
 - **ORG-006:** los miembros pueden crear, pausar, cerrar y duplicar oportunidades propias.
-- **ORG-007:** la pestaña `Startups` solo lista entidades clasificadas bajo los criterios canónicos; otras organizaciones conservan ficha y pueden aparecer como oferentes en `Oportunidades`.
+- **ORG-007:** la lista pública muestra entidades clasificadas bajo los criterios canónicos y anida sus oportunidades activas; otras organizaciones conservan ficha y pueden aparecer cuando ofrecen una oportunidad válida.
 - **ORG-008:** el propietario puede invitar o retirar miembros y asignar permisos; transferir la propiedad requiere reautenticación, aceptación del nuevo propietario y auditoría.
 - **ORG-009:** un envío comunitario requiere contacto verificado, rate limit y moderación; solo una organización reclamada puede publicar como voz oficial.
 

@@ -50,8 +50,8 @@ export default async function OpportunityDetailPage({ params, searchParams }: { 
       <SiteHeader />
       <main className="app-main">
         <article className="detail-page opportunity-detail">
-          <Link className="back-link" href="/oportunidades">
-            <ArrowLeft size={16} aria-hidden="true" /> Todas las oportunidades
+          <Link className="back-link" href="/?abiertas=1">
+            <ArrowLeft size={16} aria-hidden="true" /> Volver al directorio
           </Link>
 
           <div className="detail-grid">

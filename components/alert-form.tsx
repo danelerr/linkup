@@ -19,7 +19,7 @@ export function AlertForm({ initialQuery = "" }: { initialQuery?: string }) {
     const response = await fetch("/api/alerts", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ label, query: { vista: "oportunidades", q: query }, frequency }),
+      body: JSON.stringify({ label, query: { abiertas: "1", q: query }, frequency }),
     });
     const payload = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) setError(payload.error ?? "No pudimos crear la alerta.");

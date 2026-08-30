@@ -37,8 +37,8 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
       <SiteHeader />
       <main className="app-main">
         <article className="detail-page">
-          <Link className="back-link" href="/startups">
-            <ArrowLeft size={16} aria-hidden="true" /> Todas las startups
+          <Link className="back-link" href="/">
+            <ArrowLeft size={16} aria-hidden="true" /> Volver al directorio
           </Link>
 
           <div className="detail-grid">
@@ -91,7 +91,7 @@ export default async function StartupDetailPage({ params }: { params: Promise<{ 
               <dl className="fact-list">
                 <div>
                   <dt><MapPin size={16} aria-hidden="true" /> Ubicación</dt>
-                  <dd>{organization.city}, {organization.country}</dd>
+                  <dd>{organization.city}</dd>
                 </div>
                 <div>
                   <dt><Users size={16} aria-hidden="true" /> Equipo</dt>

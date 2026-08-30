@@ -5,7 +5,7 @@ Estado de los colores: normalizados desde recursos rasterizados; deben comparars
 
 ## Encargo de diseño
 
-**Producto:** directorio y red de primeras oportunidades de startups en Latinoamérica.  
+**Producto:** directorio que conecta startups con sus oportunidades en una sola exploración.
 **Audiencia principal:** talento emergente de 18 a 28 años y founders que necesitan contratar.  
 **Trabajo único de la página principal:** permitir encontrar y abrir una startup u oportunidad en segundos.  
 **Sensación:** clara, confiable, abierta, ambiciosa y humana; joven sin ser infantil; tecnológica sin parecer una plantilla SaaS.
@@ -99,21 +99,21 @@ Reglas del MVP:
 | Token | Valor | Uso |
 |---|---:|---|
 | `logo-blue` | `#3675CF` | Inicio del degradado y acento identitario |
-| `action-blue` | `#245DAF` | Botón principal, enlace y foco sobre fondo claro |
+| `action-blue` | `#2F6FC5` | Botón principal, enlace y foco sobre fondo claro |
 | `link-teal` | `#5AABBC` | Ilustración, selección suave y datos con texto oscuro |
 | `growth-mint` | `#7ED8B2` | Final del degradado, éxito suave y evidencia |
-| `ink` | `#172126` | Texto, iconos y fondos oscuros |
-| `canvas` | `#FFFFFF` | Fondo principal |
+| `ink` | `#111A20` | Texto, iconos y fondos oscuros |
+| `canvas` | `#FBFCFD` | Fondo principal |
 
 ### Derivados funcionales
 
 ```css
---color-surface: #F7FAFA;
---color-line: #DCE5E7;
---color-muted: #66757C;
---color-focus: #245DAF;
---color-action-hover: #1D4F95;
---color-action-active: #173F78;
+--color-surface: #F2F6F7;
+--color-line: #DBE4E7;
+--color-muted: #65747B;
+--color-focus: #2F6FC5;
+--color-action-hover: #255DA8;
+--color-action-active: #1D4A87;
 --color-disabled-surface: #EDF2F3;
 --color-success: #147A56;
 --color-warning: #946200;
@@ -138,9 +138,9 @@ No utilizar el degradado como fondo completo de página.
 
 ## Tipografía
 
-### Interfaz y contenido: Onest
+### Interfaz y contenido: Manrope
 
-Razón: formas abiertas, contemporáneas y legibles en español; se relaciona con las curvas del símbolo sin verse infantil.
+Razón: una grotesca limpia con tensión suficiente para títulos editoriales y excelente lectura en controles y listados. Su construcción abierta mantiene cercanía sin dar a la interfaz un tono escolar.
 
 Pesos permitidos:
 
@@ -149,7 +149,7 @@ Pesos permitidos:
 - 600 para títulos.
 - 700 solo para cifras o momentos excepcionales.
 
-### Metadatos: IBM Plex Mono
+### Metadatos: Archivo Narrow
 
 Uso restringido a información factual:
 
@@ -159,19 +159,19 @@ Uso restringido a información factual:
 - Estado corto.
 - Identificadores internos en administración.
 
-No se usa para párrafos, navegación ni llamadas a la acción.
+No se usa para párrafos, navegación ni llamadas a la acción. Evita que los datos adopten una estética de terminal o producto para desarrolladores.
 
 ### Escala
 
 | Rol | Tamaño / interlineado | Peso |
 |---|---|---:|
-| Título de página | 32 / 38 px | 600 |
+| Título de página | 34–46 / 38–51 px | 600 |
 | Título de detalle | 24 / 30 px | 600 |
 | Título de fila | 17 / 23 px | 600 |
 | Cuerpo | 16 / 24 px | 400 |
 | Control | 15 / 20 px | 500 |
 | Secundario | 14 / 20 px | 400 |
-| Metadata | 12 / 17 px | 500 mono |
+| Metadata | 12 / 17 px | 500 condensed |
 
 En móvil, el título de página puede bajar a 28 px. El cuerpo no baja de 16 px en formularios.
 
@@ -190,8 +190,8 @@ No se crean valores arbitrarios salvo corrección óptica documentada.
 ### Radios
 
 ```css
---radius-control: 8px;
---radius-panel: 10px;
+--radius-control: 10px;
+--radius-panel: 16px;
 --radius-pill: 999px;
 ```
 
@@ -207,10 +207,10 @@ No se crean valores arbitrarios salvo corrección óptica documentada.
 
 ## Layout
 
-- Ancho máximo general: 1040 px.
-- Canal principal del listado: máximo 880 px.
+- Ancho máximo general: 1120 px.
+- Canal principal del listado: máximo 1000 px.
 - Padding lateral: 24 px en escritorio, 16 px en móvil.
-- Encabezado: 64 px en escritorio, 56 px en móvil.
+- Encabezado: 68 px en escritorio, 56 px en móvil.
 - La búsqueda es el elemento más ancho y dominante de la página inicial.
 - La densidad proviene de filas bien espaciadas, no de cuadrículas de tarjetas.
 
@@ -220,7 +220,7 @@ El único gesto expresivo del producto es la **línea Link**: una línea de 2 px
 
 Usos permitidos:
 
-- Indicador de pestaña activa.
+- Conector entre una startup y sus oportunidades dentro de la lista unificada.
 - Progreso de una postulación.
 - Confirmación de evidencia verificada.
 - Loader principal, respetando reducción de movimiento.
@@ -299,19 +299,19 @@ Este gesto deriva directamente del logotipo y evita que una interfaz blanca y ti
 - Logotipo a la izquierda.
 - Acceso o avatar a la derecha.
 - Sin barra de navegación extensa en la raíz.
-- En móvil, las áreas privadas se abren desde menú; las dos pestañas permanecen en el contenido.
+- En móvil, las áreas privadas se abren desde menú; la exploración pública continúa siendo una sola lista.
 
 ### Búsqueda
 
 - Campo único, botón implícito con Enter y botón de limpiar visible cuando contiene texto.
-- Placeholder contextual: `Buscar startups...` o `Buscar oportunidades...`.
-- Autocompletado mezcla nombres, áreas y ubicaciones, agrupados y etiquetados.
+- Placeholder único: `Busca una startup, industria o rol`.
+- Autocompletado mezcla nombres, industrias, áreas y roles sin obligar a escoger una categoría primero.
 
-### Pestañas
+### Lista unificada
 
-- Solo `Startups` y `Oportunidades` en público.
-- Indicador activo con línea Link.
-- Estado accesible mediante semántica, no únicamente color.
+- La startup es la unidad principal de descubrimiento.
+- Sus oportunidades activas aparecen anidadas en la misma fila mediante la línea Link.
+- Área, tipo, modalidad y estado de contratación son filtros, no rutas de navegación competidoras.
 
 ### Filtros
 
@@ -319,22 +319,14 @@ Este gesto deriva directamente del logotipo y evita que una interfaz blanca y ti
 - En móvil, hoja inferior con `Ver resultados` y `Limpiar`.
 - La cantidad de filtros activos aparece como texto o número, no como punto sin etiqueta.
 
-### Fila de startup
+### Fila del directorio
 
 - Logotipo opcional.
 - Nombre.
 - Descripción de una línea.
 - Máximo tres metadatos visibles.
-- Indicador de oportunidades o `Contratando` cuando se basa en oferta activa.
-- Sin botones redundantes; la fila completa abre el detalle.
-
-### Fila de oportunidad
-
-- Cargo o nombre.
-- Organización.
-- Tipo, modalidad, ubicación y compensación cuando esté disponible.
-- Fecha o vigencia en mono.
-- Una única acción secundaria posible: guardar.
+- Oportunidades activas enlazadas inmediatamente debajo, con cargo, tipo y modalidad.
+- El nombre y `Ver startup` abren el perfil; cada rol abre su propio detalle. No se anidan enlaces interactivos.
 
 En el detalle, la acción principal dice `Postular en el sitio oficial` con indicador de salida para modo externo y `Postular` para modo nativo. El enlace externo abre una nueva pestaña, lo anuncia en su nombre accesible y usa aislamiento seguro. La insignia `Gestionada por LinkUp` es independiente del modo nativo.
 
@@ -358,14 +350,15 @@ No utilizar `Verificada` sin explicar qué se verificó.
 │ LinkUp                                                Ingresar │
 ├───────────────────────────────────────────────────────────────┤
 │                                                               │
-│ [ Buscar startups...                                  × ]     │
+│ Descubre quién está construyendo y dónde puedes sumarte.      │
+│ [ Busca una startup, industria o rol                   × ]     │
 │                                                               │
-│ Startups       Oportunidades                    Filtros        │
-│ ━━━━━━                                                        │
+│ Con oportunidades                               Filtros        │
 │                                                               │
 │ ◇  Menta                                                    › │
 │    Sistema clínico con IA                                      │
-│    Healthtech · Pre-seed · Híbrida            3 oportunidades │
+│    Healthtech · Pre-seed · Híbrida                            │
+│    ┃ Product intern                    Pasantía · Híbrido    › │
 │ ───────────────────────────────────────────────────────────── │
 │ ◇  Loop3                                                    › │
 │    Datos y automatización para inversión                        │
@@ -379,15 +372,14 @@ No utilizar `Verificada` sin explicar qué se verificó.
 ┌────────────────────────────┐
 │ LinkUp                  ○  │
 │                            │
-│ [ Buscar startups...     ] │
+│ [ Buscar startup o rol   ] │
 │                            │
-│ Startups  Oportunidades  ☷ │
-│ ━━━━━━                     │
+│ Con oportunidades      ☷   │
 │                            │
 │ Menta                    › │
 │ Sistema clínico con IA     │
 │ Pre-seed · Híbrida         │
-│ 3 oportunidades            │
+│ ┃ Product intern         › │
 │ ────────────────────────── │
 │ Loop3                    › │
 │ Datos para inversión       │
@@ -439,14 +431,14 @@ Contraste base calculado con WCAG:
 
 | Par | Relación | Uso permitido |
 |---|---:|---|
-| `ink` sobre `canvas` | 16,38:1 | Todo texto |
-| `action-blue` sobre `canvas` | 6,44:1 | Enlaces y texto normal |
-| blanco sobre `action-blue` | 6,44:1 | Botón principal |
-| `logo-blue` sobre `canvas` | 4,56:1 | Texto normal con cautela; preferirlo como marca/acento |
-| `muted` sobre `canvas` | 4,77:1 | Texto secundario normal |
-| `ink` sobre `link-teal` | 6,23:1 | Badges o superficies suaves |
-| `ink` sobre `growth-mint` | 9,64:1 | Badges o superficies suaves |
-| blanco sobre `success` | 5,32:1 | Estado sólido |
+| `ink` sobre `canvas` | 17,14:1 | Todo texto |
+| `action-blue` sobre `canvas` | 4,87:1 | Enlaces y texto normal |
+| blanco sobre `action-blue` | 5,00:1 | Botón principal |
+| `logo-blue` sobre `canvas` | 4,44:1 | Marca, icono o texto grande; no cuerpo pequeño |
+| `muted` sobre `canvas` | 4,71:1 | Texto secundario normal |
+| `ink` sobre `link-teal` | 6,70:1 | Badges o superficies suaves |
+| `ink` sobre `growth-mint` | 10,36:1 | Badges o superficies suaves |
+| blanco sobre `success` | 5,63:1 | Estado sólido |
 | blanco sobre `warning` | 5,24:1 | Estado sólido |
 | blanco sobre `danger` | 6,57:1 | Estado sólido |
 
@@ -459,7 +451,7 @@ Una primera interpretación de "minimalista y tecnológica" produciría fondo bl
 La dirección se corrigió con cuatro elecciones específicas de LinkUp:
 
 - Listados continuos en lugar de tarjetas.
-- Metadata factual en IBM Plex Mono para enfatizar vigencia y procedencia.
+- Metadata factual en Archivo Narrow para separar datos y contenido sin introducir una estética de código.
 - Línea Link derivada del eslabón y la flecha como único gesto distintivo.
 - Gradiente restringido al símbolo y a esa línea, no utilizado como decoración.
 

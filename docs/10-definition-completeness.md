@@ -64,9 +64,11 @@ Completa no significa que las hipótesis ya estén validadas, que las decisiones
 | “También fabricar” | Pasantías, trainees y proyectos pagados con evidencia final |
 | “Ser más un LinkedIn killer” | Ambición de categoría; sistema de trayectoria, no feed social inicial |
 | “¿Se deberían poder subir vacantes?” | Sí: envío moderado y publicación por organización, además de agregación |
-| “Directo sería la app” | `/` abre búsqueda con `Startups` y `Oportunidades`; no landing |
-| “No hipercargado” | Encabezado compacto, búsqueda, pestañas, filtros progresivos y lista continua |
+| “Directo sería la app” | `/` abre el directorio unificado; no landing |
+| “No hipercargado” | Encabezado compacto, búsqueda, filtros progresivos y una lista continua |
 | “Respeto por colores y marca” | Símbolo y recorrido azul–turquesa–menta conservados, normalizados y sujetos al vector original |
+| “No separar startups de oportunidades” | Cada startup contiene sus roles activos dentro de la misma fila; el resto se resuelve con filtros |
+| “Sin referencias geográficas en la marca” | Operación concentrada internamente y posicionamiento público neutro |
 | “React + Vite” | React mediante Next.js/TypeScript por SEO y servidor; Vite puro descartado para el producto público |
 
 ## Invariantes de consistencia
@@ -74,7 +76,7 @@ Completa no significa que las hipótesis ya estén validadas, que las decisiones
 Toda implementación y modificación debe mantener:
 
 1. La raíz es producto, no campaña de marketing.
-2. `Startups` es el estado inicial y `Oportunidades` está a un gesto.
+2. Startups y oportunidades forman una sola colección pública filtrable.
 3. Buscar y abrir no requiere autenticación.
 4. La procedencia de una oferta nunca se oculta.
 5. Externa y nativa son experiencias distintas.
@@ -86,7 +88,7 @@ Toda implementación y modificación debe mantener:
 11. Organización solo accede a postulaciones propias y consentidas.
 12. Éxito se mide por resultados, no por inventario o visitas aisladas.
 13. La marca usa `LinkUp` y una interfaz sobria, no la estética escolar histórica.
-14. Bolivia concentra operación inicial; la arquitectura y marca permiten Latinoamérica.
+14. La operación puede concentrarse por mercado, pero la marca y la interfaz no se etiquetan por geografía.
 
 ## Dependencias externas abiertas
 
@@ -147,7 +149,7 @@ La revisión final debe comprobar:
 - Todos los enlaces canónicos existen.
 - No hay escritura inconsistente `LinkUP`, `Link UP` o `Link - Up` fuera de ejemplos prohibidos.
 - No se propone una landing como raíz.
-- `Startups` permanece como pestaña predeterminada.
+- La raíz conserva una sola lista y no reintroduce pestañas por tipo de objeto.
 - No se mezclan eventos o voluntariado en el MVP.
 - Las referencias a Vite explican por qué no se usa como arquitectura principal.
 - Toda cifra histórica conserva muestra/fuente y cautela.
@@ -164,7 +166,7 @@ La revisión final debe comprobar:
 - 60 requisitos funcionales con identificadores únicos.
 - Un H1 por archivo, jerarquía de encabezados válida, tablas consistentes y bloques de código cerrados.
 - Sin marcadores temporales de implementación.
-- Invariantes revisados mediante búsquedas cruzadas de marca, edad, landing, pestañas, modos de postulación, eventos, IA y stack.
+- Invariantes revisados mediante búsquedas cruzadas de marca, edad, landing, lista unificada, modos de postulación, eventos, IA y stack.
 - Los cuatro archivos históricos conservaron los hashes SHA-256 registrados al iniciar el control de integridad.
 
 La definición responde qué construir, para quién, cómo debe comportarse, cómo se opera, cómo se protege, cómo puede ganar dinero, cómo se valida y en qué orden se ejecuta.

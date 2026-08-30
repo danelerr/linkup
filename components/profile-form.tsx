@@ -64,7 +64,7 @@ export function ProfileForm({ initialProfile, returnTo }: { initialProfile: Tale
           </label>
           <label className="field-label">
             País
-            <input value={profile.country} onChange={(event) => setProfile({ ...profile, country: event.target.value })} placeholder="Bolivia" maxLength={80} />
+            <input value={profile.country} onChange={(event) => setProfile({ ...profile, country: event.target.value })} placeholder="Tu país" maxLength={80} />
           </label>
           <label className="field-label">
             Modalidad preferida

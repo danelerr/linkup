@@ -12,7 +12,7 @@ function queryFromJson(value: string) {
     const parsed = JSON.parse(value) as Record<string, string>;
     return new URLSearchParams(parsed).toString();
   } catch {
-    return "vista=oportunidades";
+    return "abiertas=1";
   }
 }
 

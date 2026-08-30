@@ -2,7 +2,7 @@
 
 Estado: MVP alfa funcional sobre la definición de producto v1.0. Los registros visibles son demostrativos; todavía no es un lanzamiento público.
 
-LinkUp es el buscador de startups y oportunidades de Latinoamérica que ayuda al talento emergente a convertir potencial en trayectoria verificable.
+LinkUp es un directorio que reúne startups y sus oportunidades en una sola búsqueda, y ayuda al talento emergente a convertir potencial en trayectoria verificable.
 
 El producto combina dos motores inseparables:
 
@@ -42,7 +42,7 @@ Si una fuente histórica contradice esta documentación, prevalece esta document
 ## Decisiones fundamentales
 
 - LinkUp será buscador y sistema de desarrollo de trayectoria; no se elige uno u otro.
-- La entrada pública será minimalista: búsqueda, dos pestañas y listado.
+- La entrada pública será minimalista: una búsqueda, filtros y una lista que conecta cada startup con sus oportunidades.
 - Se podrá navegar y abrir una postulación externa sin cuenta; la cuenta se pedirá para guardar, crear alertas, registrar seguimiento o postular dentro de LinkUp.
 - Habrá oportunidades indexadas con postulación externa y oportunidades con postulación gestionada dentro de la plataforma. Solo las que tengan intervención operativa real usarán `Gestionada por LinkUp`.
 - El foco inicial de empleo será para mayores de 18 años. La experiencia para menores requiere un producto y revisión legal separados.

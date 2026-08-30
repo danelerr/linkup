@@ -6,7 +6,7 @@ Fecha de corte: 29 de agosto de 2026
 
 ## Definición en una frase
 
-LinkUp es el buscador de startups y oportunidades de Latinoamérica que ayuda al talento emergente a convertir potencial en trayectoria verificable.
+LinkUp es el directorio que reúne startups y sus oportunidades en una sola búsqueda, y ayuda al talento emergente a convertir potencial en trayectoria verificable.
 
 ## Tesis
 
@@ -50,7 +50,7 @@ LinkUp no se presenta públicamente como un "LinkedIn killer". Esa es una ambici
 
 La posición inicial es:
 
-> La red de primeras oportunidades y talento emergente de Latinoamérica.
+> El lugar para descubrir quién está construyendo y dónde puedes sumarte.
 
 La diferencia conceptual con una red profesional tradicional es:
 
@@ -86,7 +86,7 @@ La diferencia conceptual con una red profesional tradicional es:
 
 ### Usuario principal: talento emergente
 
-Personas de 18 a 28 años en Bolivia y Latinoamérica que:
+Personas de 18 a 28 años que:
 
 - Buscan su primera o segunda experiencia relevante.
 - Tienen poca experiencia laboral formal.
@@ -114,12 +114,12 @@ Startups y organizaciones pequeñas o medianas que:
 - Programas juveniles, fundaciones y organizaciones de formación.
 - Empresas con programas de talento temprano.
 
-## Alcance geográfico
+## Entrada al mercado
 
-- Bolivia es el punto de entrada comunitario y de alianzas.
-- El mercado de oferta es Latinoamérica de habla hispana desde el comienzo, especialmente oportunidades remotas abiertas a Bolivia.
-- No se construye un producto limitado a la cantidad de vacantes de startups bolivianas.
-- La expansión por país debe ocurrir con fuentes, taxonomías y responsables de calidad definidos.
+- La operación comienza en un mercado concentrado donde el equipo ya tiene acceso a comunidades y organizaciones.
+- Esa decisión de operaciones no se convierte en un eslogan ni en una etiqueta geográfica dentro de la marca.
+- La interfaz presenta datos concretos de cada startup cuando son útiles, sin posicionar públicamente a LinkUp como un directorio regional o nacional.
+- La expansión debe ocurrir con fuentes, taxonomías y responsables de calidad definidos.
 
 ## Objetos centrales del producto
 
@@ -127,7 +127,7 @@ Startups y organizaciones pequeñas o medianas que:
 
 Entidad pública indexable con descripción, etapa, equipo, industrias, ubicación, modalidad, fundadores cuando sean datos públicos o declarados, estado de verificación y oportunidades vigentes.
 
-La pestaña pública `Startups` muestra únicamente entidades clasificadas como startup. Para el MVP, una startup es una organización activa que desarrolla un producto o modelo repetible con intención de crecimiento, presenta identidad pública comprobable y tiene al menos una señal reciente de operación. No necesita inversión, aceleradora ni constitución societaria para ser incluida.
+La lista pública muestra una startup junto con sus oportunidades activas. Para el MVP, una startup es una organización activa que desarrolla un producto o modelo repetible con intención de crecimiento, presenta identidad pública comprobable y tiene al menos una señal reciente de operación. No necesita inversión, aceleradora ni constitución societaria para ser incluida.
 
 Señales admisibles de operación:
 

@@ -108,7 +108,7 @@ Depende de acceso al logo y decisión de nombre.
 - Logo vectorial, wordmark, favicon y reglas mínimas.
 - Tokens de color, tipografía, espacio, radios, bordes y movimiento.
 - Prototipo responsive de:
-  - raíz con `Startups` y `Oportunidades`;
+  - raíz con directorio unificado de startups y oportunidades;
   - resultados y filtros;
   - detalle de startup;
   - detalle de oportunidad;

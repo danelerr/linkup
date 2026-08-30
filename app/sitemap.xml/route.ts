@@ -14,8 +14,6 @@ export function GET(request: Request) {
   const origin = new URL(request.url).origin;
   const paths = [
     "/",
-    "/startups",
-    "/oportunidades",
     "/agregar",
     "/confianza",
     ...organizations.map((organization) => `/startups/${organization.slug}`),

@@ -1,13 +1,4 @@
-import type { Metadata } from "next";
-import { ExploreApp } from "@/components/explore-app";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
-
-export const metadata: Metadata = {
-  title: "Startups de Latinoamérica",
-  description: "Busca startups latinoamericanas por país, industria, etapa y modalidad.",
-  alternates: { canonical: "/startups" },
-};
+import { redirect } from "next/navigation";
 
 export default async function StartupsPage({
   searchParams,
@@ -15,20 +6,9 @@ export default async function StartupsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  return (
-    <div className="site-shell">
-      <SiteHeader />
-      <main className="app-main">
-        <ExploreApp
-          initialTab="startups"
-          initialQuery={typeof params.q === "string" ? params.q : ""}
-          initialCountry={typeof params.pais === "string" ? params.pais : ""}
-          initialIndustry={typeof params.industria === "string" ? params.industria : ""}
-          initialModality={typeof params.modalidad === "string" ? params.modalidad : ""}
-          initialHiring={params.contratando === "1"}
-        />
-      </main>
-      <SiteFooter />
-    </div>
-  );
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string" && key !== "vista" && key !== "pais") query.set(key, value);
+  }
+  redirect(query.size ? `/?${query.toString()}` : "/");
 }
