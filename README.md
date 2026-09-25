@@ -1,6 +1,6 @@
 # LinkUp
 
-Estado: MVP alfa funcional sobre la definición de producto v1.0. Los registros visibles son demostrativos; todavía no es un lanzamiento público.
+Estado: alfa local con catálogo editable, autenticación propia y pruebas de integración. No es un lanzamiento público. El catálogo comienza vacío; los ejemplos son una opción explícita de desarrollo.
 
 LinkUp es un directorio que reúne startups y sus oportunidades en una sola búsqueda, y ayuda al talento emergente a convertir potencial en trayectoria verificable.
 
@@ -43,13 +43,13 @@ Si una fuente histórica contradice esta documentación, prevalece esta document
 
 - LinkUp será buscador y sistema de desarrollo de trayectoria; no se elige uno u otro.
 - La entrada pública será minimalista: una búsqueda, filtros y una lista que conecta cada startup con sus oportunidades.
-- Se podrá navegar y abrir una postulación externa sin cuenta; la cuenta se pedirá para guardar, crear alertas, registrar seguimiento o postular dentro de LinkUp.
+- Se podrá navegar y abrir una postulación externa sin cuenta; la cuenta se pedirá para guardar, crear alertas, registrar seguimiento, postular dentro de LinkUp o proponer información (D-025).
 - Habrá oportunidades indexadas con postulación externa y oportunidades con postulación gestionada dentro de la plataforma. Solo las que tengan intervención operativa real usarán `Gestionada por LinkUp`.
 - El foco inicial de empleo será para mayores de 18 años. La experiencia para menores requiere un producto y revisión legal separados.
 - El núcleo inicial son startups, vacantes, pasantías, proyectos pagados y programas que produzcan evidencia profesional.
 - No habrá feed social, conexiones, likes, cursos propios ni aplicación móvil en el MVP.
 - La IA enriquecerá datos y explicaciones; no rechazará candidatos ni será el diferenciador central.
-- El stack productivo recomendado sigue siendo Next.js, TypeScript, Supabase/PostgreSQL y trabajos asíncronos con Trigger.dev. Esta alfa desplegable usa el runtime compatible Vinext y Cloudflare D1/SIWC; la adaptación está registrada como D-023.
+- La implementación actual usa Next.js estándar, React, TypeScript, Tailwind CSS, componentes propios, Morphicons, Better Auth y SQLite con Drizzle. No depende de Sites ni del acceso con ChatGPT. PostgreSQL y procesos asíncronos quedan como evolución para varias instancias; véase D-024.
 - La marca conservará el símbolo y la familia azul-turquesa-menta, pero utilizará una interfaz blanca, sobria y de alta precisión.
 
 ## Resultado que debe producir el MVP
@@ -83,9 +83,45 @@ Comprobaciones:
 npm run lint
 npx tsc --noEmit
 npm test
+npm run build
+npm run test:integration
 ```
 
-El proyecto crea las tablas D1 de la alfa de forma idempotente y conserva migraciones Drizzle en `drizzle/`. Las rutas privadas usan la identidad proporcionada por el entorno de hosting; explorar, buscar y abrir fichas no exige cuenta.
+Abre `http://localhost:3000`. Las variables opcionales están en `.env.example`; para Next.js pueden guardarse en `.env.local`. Si cambias el puerto o el dominio, ajusta `BETTER_AUTH_URL` al origen exacto. Los comandos `tsx` de administración leen variables del entorno, no `.env.local`: usa el mismo `LINKUP_DATABASE_PATH` cuando trabajes con una base distinta.
+
+La aplicación crea `.data/linkup.sqlite` y aplica las migraciones de `drizzle/`. Better Auth crea sus tablas al primer uso. Las contraseñas se procesan con Better Auth; no se guardan en texto plano. El secreto local se genera en `.data/auth-secret` con permisos privados. No subas `.data`, secretos ni copias de datos a git.
+
+Para probar las fichas ficticias sin mezclarlas con datos reales:
+
+```bash
+LINKUP_DATABASE_PATH=.data/demo.sqlite LINKUP_SEED_DEMO=true npm run dev
+```
+
+Las fechas originales se conservan: una oportunidad demostrativa vencida no aparece como activa. Desactivar el seed no borra registros ya insertados; usa una base separada.
+
+### Operar el catálogo
+
+1. Crea una cuenta en `/ingresar`.
+2. Concede administración localmente a esa cuenta: `npm run admin -- --email tu@correo.com`. No hay autoasignación por email ni contraseña de administrador predefinida.
+3. Abre `/admin/catalogo`: agrega startups y oportunidades, edita condiciones, guarda borradores o cierra registros.
+4. Los envíos de `/agregar` (requieren cuenta; hasta 5 por día y cuenta) y las importaciones CSV/JSON de `/admin/importar` llegan a `/admin`. Se publican desde el editor, después de revisar la fuente. Aprobar y publicar son una sola transacción.
+5. Una corrección se aplica al registro existente. Reclamar una startup requiere cuenta y aprobación explícita de una persona administradora; tener un correo no acredita representación.
+
+La importación admite hasta 100 filas / 1 MB. Columnas: `kind` (startup u opportunity), `organizationName`, `sourceUrl`; las oportunidades también necesitan `opportunityTitle`. Opcionales: `websiteUrl`, `notes`, `contactEmail`. Hay vista previa y resultados por fila. No hay scraping ni publicación automática. Los slugs, sitios y fuentes canónicas previenen duplicados; una edición desactualizada se rechaza para no pisar cambios ajenos.
+
+### Alcance que funciona y límites
+
+- Directorio único con búsqueda en títulos, descripciones, requisitos y responsabilidades; filtros en URL y paginación SQL de 12 startups. Se envía al navegador solo la página actual y hasta 3 oportunidades por startup.
+- Guardados, perfil, postulaciones nativas con consentimiento y copia del perfil, seguimiento externo, roles de organización, revisión de candidatos, exportación y eliminación de cuenta/sesiones.
+- Alertas con todos los filtros, máximo 20 por cuenta, sin duplicados. Las coincidencias nuevas se generan al entrar en Alertas según la frecuencia. `npm run alerts` permite ejecutarlo en un programador local, en lotes de hasta 200 búsquedas vencidas por ejecución. No se ha programado ni conectado ningún servicio.
+- **No se envían correos**: falta configurar proveedor para verificación de email, recuperación de contraseña y notificaciones por email antes de un lanzamiento abierto. Las cuentas actuales no prueban control de un correo; las reclamaciones requieren comprobación humana independiente.
+- SQLite sirve para una instancia con disco persistente. No usar esta configuración en varias réplicas o en un hosting con disco efímero. Para ese escenario, migrar el adaptador y las consultas a PostgreSQL, revisar autorización y ejecutar estas mismas pruebas. No se promete escalabilidad ilimitada.
+- La búsqueda usa campos normalizados y filtros indexados, no IA ni ranking semántico. A gran volumen, evaluar FTS5/PostgreSQL y medir latencia. El catálogo y los campos públicos no se recopilan ni verifican solos.
+- El override de `esbuild` actualiza una dependencia transitiva antigua de la herramienta de migraciones. Se comprueba con `npm run db:generate`, además del build y tests.
+
+Para una ejecución local de producción: `npm run build` y `npm run start`. No hay comandos ni configuración de despliegue automático.
+
+Las pruebas usan bases temporales aisladas; nunca la base del proyecto. Antes de un cambio de esquema en una base real, realiza una copia consistente con la API de backup de SQLite y comprueba su restauración. No copies solo el `.sqlite` mientras haya escrituras WAL activas.
 
 ## Antes de publicar
 

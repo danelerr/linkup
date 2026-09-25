@@ -5,7 +5,9 @@ Objetivo: definir una base sencilla para el MVP que no bloquee el directorio pú
 
 ## Estado de implementación de la alfa
 
-La implementación del 30 de agosto de 2026 corre como monolito TypeScript sobre Vinext, un runtime compatible con Next.js App Router, y usa Cloudflare D1 más la identidad SIWC del entorno de Sites. Esta adaptación permite probar y publicar la alfa sin credenciales externas pendientes. No reemplaza D-014 como arquitectura productiva: la lógica de datos está aislada para migrar a Supabase/PostgreSQL, Auth, Storage y RLS antes de procesar información real a escala. La decisión temporal y sus límites están registrados como D-023.
+Actualizado el 24 de septiembre de 2026 (D-024): Next.js estándar + React + TypeScript; Tailwind y CSS/componentes locales; Morphicons para estados; Better Auth email/contraseña; SQLite local con Drizzle y migraciones. Catálogo persistido con columnas indexadas y documento de contenido validado, no arrays embebidos en el cliente. Publicación, auditoría y aprobación se ejecutan en una transacción. Ediciones concurrentes usan `updatedAt` como precondición. Autorización de roles en servidor y protección de origen en mutaciones.
+
+La implementación **no** usa Supabase, RLS, Trigger.dev, Resend, PostHog ni Sentry. La tabla que sigue describe la arquitectura objetivo previa, no dependencias instaladas. El README documenta los comandos y límites vigentes. SQLite requiere una instancia con disco persistente; escalar horizontalmente implica migración explícita, no solo cambiar una variable. Alertas dentro de la app; correo, recuperación de contraseña y verificación de email pendientes de proveedor. No se publica ni se conecta infraestructura sin autorización.
 
 ## Decisión arquitectónica
 

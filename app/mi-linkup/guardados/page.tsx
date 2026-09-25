@@ -1,45 +1,56 @@
 import type { Metadata } from "next";
-import { ArrowRight, Bookmark } from "lucide-react";
 import Link from "next/link";
+import { OpeningRow } from "@/components/opening-row";
+import { textLinkClass } from "@/components/ui/button";
+import { EmptyState, PageHeader } from "@/components/ui/layout";
 import { opportunityBySlug, organizationForOpportunity } from "@/lib/catalog";
 import { requireSyncedUser } from "@/lib/current-user";
+import { todayIso } from "@/lib/dates";
 import { listSavedOpportunitySlugs } from "@/lib/user-data";
 
-export const metadata: Metadata = { title: "Guardados", robots: { index: false, follow: false } };
+export const metadata: Metadata = {
+  title: "Guardados",
+  robots: { index: false, follow: false },
+};
 
 export default async function SavedPage() {
   const user = await requireSyncedUser("/mi-linkup/guardados");
   const slugs = await listSavedOpportunitySlugs(user.userId);
-  const saved = slugs.map(opportunityBySlug).filter((item) => item !== undefined);
+  const saved = slugs
+    .map((slug) => opportunityBySlug(slug))
+    .filter((item) => item !== undefined);
+  const today = todayIso();
   return (
-    <div className="account-page">
-      <header className="account-heading">
-        <p className="eyebrow">Mi LinkUp</p>
-        <h1>Guardados</h1>
-        <p>Oportunidades que quieres revisar con calma.</p>
-      </header>
+    <div className="grid gap-8">
+      <PageHeader
+        eyebrow="Mi LinkUp"
+        title="Guardados"
+        description="Oportunidades que quieres revisar con calma. Las que cierran pronto aparecen marcadas."
+      />
       {saved.length ? (
-        <div className="account-list">
-          {saved.map((opportunity) => {
-            const organization = organizationForOpportunity(opportunity);
-            return (
-              <Link href={`/oportunidades/${opportunity.slug}`} key={opportunity.id}>
-                <span className="account-list-icon"><Bookmark size={17} aria-hidden="true" /></span>
-                <span>
-                  <strong>{opportunity.title}</strong>
-                  <small>{organization?.name} · {opportunity.modality} · {opportunity.compensationType}</small>
-                </span>
-                <ArrowRight size={17} aria-hidden="true" />
-              </Link>
-            );
-          })}
-        </div>
+        <ul className="border-t border-line pt-2">
+          {saved.map((opportunity) => (
+            <li key={opportunity.id} className="border-b border-line py-1">
+              <OpeningRow
+                opportunity={opportunity}
+                organizationName={organizationForOpportunity(opportunity)?.name}
+                href={`/oportunidades/${opportunity.slug}`}
+                today={today}
+              />
+            </li>
+          ))}
+        </ul>
       ) : (
-        <div className="account-empty account-empty-large">
-          <Bookmark size={22} aria-hidden="true" />
-          <p>No guardaste oportunidades todavía.</p>
-          <Link className="button-secondary" href="/oportunidades">Explorar oportunidades</Link>
-        </div>
+        <EmptyState
+          title="No guardaste oportunidades todavía."
+          actions={
+            <Link className={textLinkClass} href="/?abiertas=1">
+              Explorar oportunidades abiertas
+            </Link>
+          }
+        >
+          Usa “Guardar” en cualquier oportunidad para volver a ella después.
+        </EmptyState>
       )}
     </div>
   );

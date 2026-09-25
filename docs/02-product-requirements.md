@@ -77,7 +77,7 @@ La acción `Agregar` se muestra como enlace secundario o dentro del menú; no co
 | `/startups/[slug]` | Público | Entender una startup y ver sus oportunidades |
 | `/oportunidades` | Público | Explorar oportunidades con filtros |
 | `/oportunidades/[slug]` | Público | Evaluar condiciones y postular |
-| `/agregar` | Público | Proponer startup u oportunidad |
+| `/agregar` | Con cuenta | Proponer startup, oportunidad o corrección (D-025) |
 | `/ingresar` | Público | Autenticarse |
 | `/registro` | Público | Crear cuenta con consentimiento |
 | `/mi-linkup` | Talento | Ver actividad y próximos pasos |

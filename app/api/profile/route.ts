@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getCurrentUser } from "@/lib/session";
 import { getProfile, syncUser, updateProfile } from "@/lib/user-data";
 import { httpUrlSchema } from "@/lib/validation";
 
@@ -18,20 +18,33 @@ const profileSchema = z.object({
 });
 
 export async function GET() {
-  const user = await getChatGPTUser();
-  if (!user) return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
+  const user = await getCurrentUser();
+  if (!user)
+    return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
   await syncUser(user);
   return NextResponse.json({ profile: await getProfile(user.userId) });
 }
 
 export async function PUT(request: Request) {
-  const user = await getChatGPTUser();
-  if (!user) return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
-  const parsed = profileSchema.safeParse(await request.json().catch(() => null));
+  const user = await getCurrentUser();
+  if (!user)
+    return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
+  const parsed = profileSchema.safeParse(
+    await request.json().catch(() => null),
+  );
   if (!parsed.success) {
-    return NextResponse.json({ error: "Revisa los campos del perfil.", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: "Revisa los campos del perfil.",
+        details: parsed.error.flatten(),
+      },
+      { status: 400 },
+    );
   }
   await syncUser(user);
   await updateProfile(user.userId, parsed.data);
-  return NextResponse.json({ ok: true, profile: await getProfile(user.userId) });
+  return NextResponse.json({
+    ok: true,
+    profile: await getProfile(user.userId),
+  });
 }

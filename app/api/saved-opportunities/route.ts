@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getCurrentUser } from "@/lib/session";
 import { opportunityBySlug } from "@/lib/catalog";
 import {
   listSavedOpportunitySlugs,
@@ -14,20 +14,31 @@ const saveSchema = z.object({
 });
 
 export async function GET() {
-  const user = await getChatGPTUser();
-  if (!user) return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
+  const user = await getCurrentUser();
+  if (!user)
+    return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
   await syncUser(user);
-  return NextResponse.json({ slugs: await listSavedOpportunitySlugs(user.userId) });
+  return NextResponse.json({
+    slugs: await listSavedOpportunitySlugs(user.userId),
+  });
 }
 
 export async function POST(request: Request) {
-  const user = await getChatGPTUser();
-  if (!user) return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
+  const user = await getCurrentUser();
+  if (!user)
+    return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
   const parsed = saveSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success || !opportunityBySlug(parsed.data.opportunitySlug)) {
-    return NextResponse.json({ error: "Oportunidad inválida." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Oportunidad inválida." },
+      { status: 400 },
+    );
   }
   await syncUser(user);
-  await setOpportunitySaved(user.userId, parsed.data.opportunitySlug, parsed.data.save);
+  await setOpportunitySaved(
+    user.userId,
+    parsed.data.opportunitySlug,
+    parsed.data.save,
+  );
   return NextResponse.json({ ok: true, saved: parsed.data.save });
 }

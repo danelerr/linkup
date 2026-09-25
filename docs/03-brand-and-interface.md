@@ -110,7 +110,7 @@ Reglas del MVP:
 ```css
 --color-surface: #F2F6F7;
 --color-line: #DBE4E7;
---color-muted: #65747B;
+--color-muted: #5F6E75;
 --color-focus: #2F6FC5;
 --color-action-hover: #255DA8;
 --color-action-active: #1D4A87;
@@ -435,7 +435,8 @@ Contraste base calculado con WCAG:
 | `action-blue` sobre `canvas` | 4,87:1 | Enlaces y texto normal |
 | blanco sobre `action-blue` | 5,00:1 | Botón principal |
 | `logo-blue` sobre `canvas` | 4,44:1 | Marca, icono o texto grande; no cuerpo pequeño |
-| `muted` sobre `canvas` | 4,71:1 | Texto secundario normal |
+| `muted` sobre `canvas` | 5,15:1 | Texto secundario normal |
+| `muted` sobre `surface` | 4,86:1 | Texto secundario sobre superficies |
 | `ink` sobre `link-teal` | 6,70:1 | Badges o superficies suaves |
 | `ink` sobre `growth-mint` | 10,36:1 | Badges o superficies suaves |
 | blanco sobre `success` | 5,63:1 | Estado sólido |

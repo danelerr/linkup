@@ -14,20 +14,31 @@ export async function requireOperator(returnTo: string) {
   return { user, role };
 }
 
-export async function requireOrganizationMember(returnTo: string, organizationSlug: string) {
+export async function requireOrganizationMember(
+  returnTo: string,
+  organizationSlug: string,
+) {
   const user = await requireSyncedUser(returnTo);
   if (!(await hasOrganizationAccess(user.userId, organizationSlug))) notFound();
   return user;
 }
 
-export async function requireOrganizationRecruiter(returnTo: string, organizationSlug: string) {
+export async function requireOrganizationRecruiter(
+  returnTo: string,
+  organizationSlug: string,
+) {
   const user = await requireSyncedUser(returnTo);
-  if (!(await hasOrganizationCandidateAccess(user.userId, organizationSlug))) notFound();
+  if (!(await hasOrganizationCandidateAccess(user.userId, organizationSlug)))
+    notFound();
   return user;
 }
 
-export async function requireOrganizationOwner(returnTo: string, organizationSlug: string) {
+export async function requireOrganizationOwner(
+  returnTo: string,
+  organizationSlug: string,
+) {
   const user = await requireSyncedUser(returnTo);
-  if (!(await hasOrganizationOwnerAccess(user.userId, organizationSlug))) notFound();
+  if (!(await hasOrganizationOwnerAccess(user.userId, organizationSlug)))
+    notFound();
   return user;
 }

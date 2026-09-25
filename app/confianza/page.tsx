@@ -1,50 +1,91 @@
 import type { Metadata } from "next";
-import { ArrowLeft, CheckCircle2, Eye, FileSearch, History, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { Eye } from "lucide-react";
+import { BackLink } from "@/components/detail";
+import { SiteShell } from "@/components/site-shell";
+import { textLinkClass } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/layout";
 
 export const metadata: Metadata = {
   title: "Cómo verificamos",
-  description: "Cómo LinkUp revisa fuentes, vigencia y procedencia de startups y oportunidades.",
+  description:
+    "Cómo LinkUp revisa fuentes, vigencia y procedencia de startups y oportunidades.",
   alternates: { canonical: "/confianza" },
 };
 
 const checks = [
-  { icon: FileSearch, title: "La fuente", text: "Buscamos una página oficial, publicación atribuible o envío de una organización identificada." },
-  { icon: CheckCircle2, title: "La vigencia", text: "Comprobamos si la oportunidad sigue abierta y mostramos la fecha de la última revisión." },
-  { icon: History, title: "La procedencia", text: "Distinguimos lo importado, lo enviado por la comunidad y lo declarado por la organización." },
-  { icon: ShieldCheck, title: "La intervención", text: "Solo usamos “Gestionada por LinkUp” cuando revisamos la oportunidad y operamos la postulación." },
+  {
+    title: "La fuente",
+    text: "Buscamos una página oficial, publicación atribuible o envío de una organización identificada.",
+  },
+  {
+    title: "La vigencia",
+    text: "Comprobamos si la oportunidad sigue abierta y mostramos la fecha de la última revisión.",
+  },
+  {
+    title: "La procedencia",
+    text: "Distinguimos lo importado, lo enviado por la comunidad y lo declarado por la organización.",
+  },
+  {
+    title: "La intervención",
+    text: "Solo usamos “Gestionada por LinkUp” cuando revisamos la oportunidad y operamos la postulación.",
+  },
 ];
 
 export default function TrustPage() {
   return (
-    <div className="site-shell">
-      <SiteHeader />
-      <main className="app-main">
-        <article className="trust-page">
-          <Link className="back-link" href="/"><ArrowLeft size={16} aria-hidden="true" /> Volver a explorar</Link>
-          <header className="trust-heading">
-            <p className="eyebrow">Confianza</p>
-            <h1>Una fuente visible vale más que una insignia vacía.</h1>
-            <p>LinkUp no afirma que una startup sea segura, rentable o un buen lugar para trabajar. Explica de dónde viene cada dato y cuándo fue revisado.</p>
-          </header>
-          <div className="trust-checks">
-            {checks.map(({ icon: Icon, title, text }, index) => (
-              <section key={title}>
-                <span><Icon size={19} aria-hidden="true" /></span>
-                <div><small>0{index + 1}</small><h2>{title}</h2><p>{text}</p></div>
-              </section>
-            ))}
+    <SiteShell>
+      <article className="mx-auto max-w-[760px] pt-4 pb-24 sm:pt-8">
+        <BackLink href="/">Volver a explorar</BackLink>
+        <PageHeader
+          className="mt-4"
+          eyebrow="Confianza"
+          title="Una fuente visible vale más que una insignia vacía."
+          description="LinkUp no afirma que una startup sea segura, rentable o un buen lugar para trabajar. Explica de dónde viene cada dato y cuándo fue revisado."
+        />
+        <ol className="link-tree mt-12 grid gap-8 [--li-x:0px] [--trunk-bottom:0px] [--trunk-top:6px] [--trunk-x:11px]">
+          {checks.map(({ title, text }, index) => (
+            <li
+              key={title}
+              className={
+                index === checks.length - 1 ? "link-tree-end pl-12" : "pl-12"
+              }
+            >
+              <p className="font-meta text-xs font-bold tracking-[0.08em] text-muted">
+                0{index + 1}
+              </p>
+              <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em]">
+                {title}
+              </h2>
+              <p className="mt-1.5 text-[15px] leading-6 text-body">{text}</p>
+            </li>
+          ))}
+        </ol>
+        <section className="mt-12 flex gap-4 rounded-panel bg-surface p-5 sm:p-6">
+          <Eye
+            className="mt-0.5 size-5 shrink-0 text-action"
+            aria-hidden="true"
+          />
+          <div>
+            <h2 className="text-base font-semibold">
+              Los ejemplos siempre se identifican.
+            </h2>
+            <p className="mt-1.5 text-[15px] leading-6 text-body">
+              Si una ficha está marcada como demostrativa, sirve para probar la
+              experiencia y no es una oportunidad real. Los registros publicados
+              pasan por revisión humana y muestran su fuente y la fecha de
+              comprobación. Una revisión no garantiza que la información
+              permanezca vigente.
+            </p>
           </div>
-          <section className="trust-principle">
-            <Eye size={20} aria-hidden="true" />
-            <div><h2>Las fichas actuales son demostrativas.</h2><p>Antes del piloto público se reemplazarán por registros con fuentes reales y permisos de uso claros. La interfaz ya las identifica para no confundir una prueba de producto con información verificada.</p></div>
-          </section>
-          <p className="trust-action">¿Viste un dato incorrecto? <Link href="/agregar?tipo=correccion">Envíanos una corrección con su fuente.</Link></p>
-        </article>
-      </main>
-      <SiteFooter />
-    </div>
+        </section>
+        <p className="mt-8 text-[15px] text-body">
+          ¿Viste un dato incorrecto?{" "}
+          <Link className={textLinkClass} href="/agregar?tipo=correccion">
+            Envíanos una corrección con su fuente.
+          </Link>
+        </p>
+      </article>
+    </SiteShell>
   );
 }

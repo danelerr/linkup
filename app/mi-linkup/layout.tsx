@@ -1,21 +1,22 @@
 import type { ReactNode } from "react";
 import { AccountNav } from "@/components/account-nav";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { SignOutButton } from "@/components/sign-out-button";
+import { WorkspaceShell } from "@/components/workspace-shell";
 
-export default async function MyLinkUpLayout({ children }: { children: ReactNode }) {
+export default async function MyLinkUpLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
-    <div className="site-shell">
-      <SiteHeader />
-      <main className="account-main">
-        <div className="account-layout">
-          <aside className="account-sidebar">
-            <AccountNav />
-          </aside>
-          <div className="account-content">{children}</div>
-        </div>
-      </main>
-      <SiteFooter />
-    </div>
+    <WorkspaceShell
+      nav={
+        <AccountNav>
+          <SignOutButton />
+        </AccountNav>
+      }
+    >
+      {children}
+    </WorkspaceShell>
   );
 }

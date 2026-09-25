@@ -3,6 +3,14 @@
 Versión: 1.0  
 Principio: agregar la oferta de forma amplia, pero nunca ocultar procedencia, vigencia o incertidumbre.
 
+## Implementación local actual · 24 de septiembre de 2026
+
+Funciona: envíos manuales y CSV/JSON (100 registros por lote) → validación y deduplicación → revisión humana → editor → publicación transaccional. Fuentes canónicas conservan los parámetros que identifican la vacante y eliminan tracking. El catálogo se puede editar, guardar como borrador y cerrar sin reconstruir la app. Las oportunidades vencidas dejan de aparecer activas y el servidor bloquea su postulación. Los cambios registran responsable, motivo y versión anterior; una edición obsoleta se rechaza.
+
+Búsqueda SQL paginada sobre contenido normalizado, incluidos requisitos; filtros de industria, área, tipo, modalidad y nivel. No se envía el catálogo completo al navegador. Alertas conservan esos filtros y generan avisos internos para oportunidades publicadas después de guardar la búsqueda. No envían correos.
+
+Lo descrito debajo sobre adaptadores, extracción, procedencia por campo, revalidación de fuentes, ranking y matching es **diseño objetivo**, no automatización instalada. Ningún importador visita enlaces o recopila contenido remoto en esta versión.
+
 ## Tipos de oferta
 
 LinkUp obtiene oportunidades mediante cuatro canales:

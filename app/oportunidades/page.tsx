@@ -8,7 +8,8 @@ export default async function OpportunitiesPage({
   const params = await searchParams;
   const query = new URLSearchParams({ abiertas: "1" });
   for (const [key, value] of Object.entries(params)) {
-    if (typeof value === "string" && key !== "vista" && key !== "pais") query.set(key, value);
+    if (typeof value === "string" && key !== "vista" && key !== "pais")
+      query.set(key, value);
   }
   redirect(`/?${query.toString()}`);
 }

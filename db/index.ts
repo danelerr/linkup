@@ -1,13 +1,31 @@
-import { env } from "cloudflare:workers";
-import { drizzle } from "drizzle-orm/d1";
+import Database from "better-sqlite3";
+import { mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "./schema";
 
-export function getDb() {
-  if (!env.DB) {
-    throw new Error(
-      "Cloudflare D1 binding `DB` is unavailable. Set the `d1` field in .openai/hosting.json to `DB` or let your control plane inject the real binding values before using the database."
-    );
-  }
+function connect() {
+  const filename = resolve(
+    /* turbopackIgnore: true */ process.env.LINKUP_DATABASE_PATH ||
+      ".data/linkup.sqlite",
+  );
+  mkdirSync(dirname(filename), { recursive: true });
+  const client = new Database(filename);
+  client.pragma("journal_mode = WAL");
+  client.pragma("foreign_keys = ON");
+  client.pragma("busy_timeout = 5000");
+  const db = drizzle(client, { schema });
+  migrate(db, { migrationsFolder: resolve("drizzle") });
+  return { db, client };
+}
 
-  return drizzle(env.DB, { schema });
+const state = globalThis as unknown as {
+  linkupDatabase?: ReturnType<typeof connect>;
+};
+export function getDb() {
+  return (state.linkupDatabase ??= connect()).db;
+}
+export function getSqlite() {
+  return (state.linkupDatabase ??= connect()).client;
 }

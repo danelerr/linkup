@@ -277,12 +277,30 @@ La frase `LinkedIn killer` se usa solo como ambición interna para discutir cate
 
 ### D-023 — Runtime de la alfa desplegable
 
-- **Estado:** Aceptada temporalmente para la alfa.
+- **Estado:** Reemplazada por D-024. Se conserva como antecedente, no como autorización de despliegue.
 - **Decisión:** implementar la alfa en el runtime compatible con Next.js App Router de Vinext, Cloudflare D1 y autenticación SIWC provista por Sites.
 - **Razón:** permite verificar el circuito completo y desplegar sin fingir una integración con Supabase cuyas credenciales, región y políticas todavía no fueron aprobadas.
 - **Límite:** D-014 continúa gobernando la arquitectura productiva antes de operar datos reales a escala; esta adaptación no autoriza relajar consentimiento, permisos o auditoría.
 - **Implicación:** acceso a datos permanece detrás de servicios de dominio, el esquema conserva migraciones y todos los datos visibles de la alfa se identifican como demostrativos.
 - **Revisión:** al cerrar O-009 y seleccionar infraestructura productiva.
+
+### D-024 — Aplicación independiente y catálogo operable
+
+- **Estado:** Implementada localmente el 24 de septiembre de 2026; reemplaza D-023.
+- **Decisión:** Next.js estándar, React/TypeScript, Tailwind y componentes propios; Morphicons únicamente para comunicar estados. Better Auth con cuenta de LinkUp y SQLite/Drizzle con migraciones para una instancia local persistente. Sin acceso con ChatGPT ni dependencia de Sites.
+- **Razón:** corregir la navegación de producción del runtime beta, retirar la identidad del hosting y permitir operar el catálogo sin editar código.
+- **Operación:** editor con borrador/publicado/cerrado; ingesta manual o CSV/JSON; fuentes y duplicados comprobados; aprobación y publicación atómicas; control de ediciones concurrentes. Búsqueda y paginación en servidor, vigencia comprobada al buscar y postular. Avisos de búsqueda dentro de LinkUp.
+- **Límites:** no hay envío de email, recuperación/verificación por correo, scraping, IA de búsqueda ni programador de trabajos conectado. SQLite no es configuración multiinstancia. D-014 queda como referencia de evolución, no como infraestructura instalada.
+- **Autorización:** desarrollo y pruebas locales. No publicar, desplegar ni conectar servicios externos sin una instrucción expresa del usuario.
+- **Verificación:** unitarias de dominio, integración HTTP contra build de producción con base temporal, revisión de escritorio/móvil y teclado en navegador. Los ejemplos solo se insertan al activar una variable explícita y en una base separada.
+
+### D-025 — Proponer información requiere cuenta
+
+- **Estado:** Implementada localmente el 25 de septiembre de 2026.
+- **Decisión:** `/agregar` acepta propuestas de startups, oportunidades, correcciones y reclamaciones solo desde una cuenta. El contacto es el correo de la cuenta y cada cuenta puede enviar hasta 5 propuestas por día. Explorar y abrir la postulación externa siguen sin cuenta.
+- **Razón:** con envíos anónimos el límite por correo se evitaba cambiando de correo; una cuenta permite atribuir cada propuesta, consultar a quien la envió y limitar el volumen.
+- **Límite:** mientras no exista verificación por correo (D-024), una cuenta no prueba la identidad ni el control del correo. La revisión humana sigue siendo obligatoria antes de publicar.
+- **Revisión:** al conectar un proveedor de correo, exigir correo verificado para proponer.
 
 ## Asuntos abiertos
 

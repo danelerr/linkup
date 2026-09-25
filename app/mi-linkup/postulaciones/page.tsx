@@ -1,53 +1,113 @@
 import type { Metadata } from "next";
-import { ArrowUpRight, BriefcaseBusiness } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { ApplicationProgress } from "@/components/application-progress";
 import { ApplicationStatusControl } from "@/components/application-status-control";
-import { formatShortDate, opportunityBySlug, organizationForOpportunity } from "@/lib/catalog";
+import { FormSuccess } from "@/components/ui/field";
+import { Badge } from "@/components/ui/badge";
+import { textLinkClass } from "@/components/ui/button";
+import { EmptyState, PageHeader } from "@/components/ui/layout";
+import { statusInfo } from "@/lib/application-status";
+import {
+  formatShortDate,
+  opportunityBySlug,
+  organizationForOpportunity,
+} from "@/lib/catalog";
 import { requireSyncedUser } from "@/lib/current-user";
 import { listApplications } from "@/lib/user-data";
 
-export const metadata: Metadata = { title: "Postulaciones", robots: { index: false, follow: false } };
+export const metadata: Metadata = {
+  title: "Postulaciones",
+  robots: { index: false, follow: false },
+};
 
-export default async function ApplicationsPage({ searchParams }: { searchParams: Promise<{ enviada?: string }> }) {
+export default async function ApplicationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ enviada?: string }>;
+}) {
   const user = await requireSyncedUser("/mi-linkup/postulaciones");
   const params = await searchParams;
   const rows = await listApplications(user.userId);
   return (
-    <div className="account-page">
-      <header className="account-heading">
-        <p className="eyebrow">Mi LinkUp</p>
-        <h1>Postulaciones</h1>
-        <p>Un solo lugar para recordar qué pasó y cuál es el siguiente paso.</p>
-      </header>
-      {params.enviada === "1" && <div className="success-banner">Postulación enviada. Guardamos una copia de lo que compartiste.</div>}
+    <div className="grid gap-8">
+      <PageHeader
+        eyebrow="Mi LinkUp"
+        title="Postulaciones"
+        description="Un solo lugar para recordar qué pasó y cuál es el siguiente paso."
+      />
+      {params.enviada === "1" && (
+        <FormSuccess>
+          Postulación enviada. Guardamos una copia de lo que compartiste.
+        </FormSuccess>
+      )}
       {rows.length ? (
-        <div className="application-list">
+        <div className="grid gap-4">
           {rows.map((row) => {
             const opportunity = opportunityBySlug(row.opportunitySlug);
             if (!opportunity) return null;
             const organization = organizationForOpportunity(opportunity);
+            const info = statusInfo(row.status);
             return (
-              <article className="application-item" key={row.id}>
-                <div className="application-main">
-                  <div className="application-topline">
-                    <span className={`application-status status-${row.status}`}>{row.status.replace("_", " ")}</span>
-                    <span>{row.mode === "native" ? "Dentro de LinkUp" : "Sitio externo"}</span>
+              <article
+                className="rounded-panel border border-line bg-paper p-5 sm:p-6"
+                key={row.id}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                      <Link
+                        className="hover:text-action"
+                        href={`/oportunidades/${opportunity.slug}`}
+                      >
+                        {opportunity.title}
+                      </Link>
+                    </h2>
+                    <p className="mt-0.5 font-meta text-[13px] tracking-[0.02em] text-muted">
+                      {organization?.name} ·{" "}
+                      {row.mode === "native"
+                        ? "Postulación en LinkUp"
+                        : "Sitio oficial"}{" "}
+                      · {formatShortDate(row.createdAt.slice(0, 10))}
+                    </p>
                   </div>
-                  <h2>{opportunity.title}</h2>
-                  <p>{organization?.name} · Enviada el {formatShortDate(row.createdAt.slice(0, 10))}</p>
-                  <Link href={`/oportunidades/${opportunity.slug}`}>Ver oportunidad <ArrowUpRight size={15} aria-hidden="true" /></Link>
+                  <Badge tone={info.tone}>{info.label}</Badge>
                 </div>
-                <ApplicationStatusControl applicationId={row.id} mode={row.mode} currentStatus={row.status} />
+                <ApplicationProgress
+                  className="mt-6"
+                  status={row.status}
+                  mode={row.mode}
+                />
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4">
+                  <ApplicationStatusControl
+                    applicationId={row.id}
+                    mode={row.mode}
+                    currentStatus={row.status}
+                  />
+                  <Link
+                    className={`${textLinkClass} inline-flex items-center gap-1 text-sm`}
+                    href={`/oportunidades/${opportunity.slug}`}
+                  >
+                    Ver oportunidad
+                    <ArrowUpRight className="size-4" aria-hidden="true" />
+                  </Link>
+                </div>
               </article>
             );
           })}
         </div>
       ) : (
-        <div className="account-empty account-empty-large">
-          <BriefcaseBusiness size={22} aria-hidden="true" />
-          <p>Todavía no registraste postulaciones.</p>
-          <Link className="button-secondary" href="/oportunidades">Buscar oportunidades</Link>
-        </div>
+        <EmptyState
+          title="Todavía no registraste postulaciones."
+          actions={
+            <Link className={textLinkClass} href="/?abiertas=1">
+              Buscar oportunidades abiertas
+            </Link>
+          }
+        >
+          Si postulas en el sitio oficial de una startup, puedes registrarlo
+          aquí para no perderle el rastro.
+        </EmptyState>
       )}
     </div>
   );

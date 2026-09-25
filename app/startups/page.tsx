@@ -8,7 +8,8 @@ export default async function StartupsPage({
   const params = await searchParams;
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (typeof value === "string" && key !== "vista" && key !== "pais") query.set(key, value);
+    if (typeof value === "string" && key !== "vista" && key !== "pais")
+      query.set(key, value);
   }
   redirect(query.size ? `/?${query.toString()}` : "/");
 }

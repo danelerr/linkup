@@ -29,6 +29,27 @@
       "when": 1788094684542,
       "tag": "0003_safe_la_nuit",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790305345787,
+      "tag": "0004_marvelous_queen_noir",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790308716641,
+      "tag": "0005_orange_shinobi_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1790372884056,
+      "tag": "0006_large_swarm",
+      "breakpoints": true
     }
   ]
 }

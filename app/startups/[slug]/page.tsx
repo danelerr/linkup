@@ -1,21 +1,36 @@
 import type { Metadata } from "next";
-import { ArrowLeft, ArrowUpRight, BriefcaseBusiness, CheckCircle2, MapPin, Users } from "lucide-react";
+import { ArrowUpRight, Bell } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
 import {
-  formatShortDate,
+  BackLink,
+  DetailSection,
+  FactList,
+  Notice,
+  Paragraphs,
+  SourceStamp,
+} from "@/components/detail";
+import { OpeningRow } from "@/components/opening-row";
+import { SiteShell } from "@/components/site-shell";
+import { Badge } from "@/components/ui/badge";
+import { buttonClass, textLinkClass } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/layout";
+import { StartupLogo } from "@/components/ui/startup-logo";
+import { cx } from "@/lib/cx";
+import { safeRelativeReturnPath } from "@/lib/navigation";
+import {
   opportunitiesForOrganization,
   organizationBySlug,
-  organizations,
 } from "@/lib/catalog";
+import { todayIso } from "@/lib/dates";
 
-export function generateStaticParams() {
-  return organizations.map((organization) => ({ slug: organization.slug }));
-}
+export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
   const { slug } = await params;
   const organization = organizationBySlug(slug);
   if (!organization) return {};
@@ -26,102 +41,218 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function StartupDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function StartupDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
+}) {
   const { slug } = await params;
   const organization = organizationBySlug(slug);
   if (!organization) notFound();
-  const relatedOpportunities = opportunitiesForOrganization(organization.slug);
+  const openings =
+    organization.status === "published"
+      ? opportunitiesForOrganization(organization.slug)
+      : [];
+  const from = safeRelativeReturnPath((await searchParams).from);
+  const today = todayIso();
+  const alertHref = `/mi-linkup/alertas?q=${encodeURIComponent(organization.name)}`;
 
   return (
-    <div className="site-shell">
-      <SiteHeader />
-      <main className="app-main">
-        <article className="detail-page">
-          <Link className="back-link" href="/">
-            <ArrowLeft size={16} aria-hidden="true" /> Volver al directorio
-          </Link>
+    <SiteShell>
+      <article className="pt-4 pb-24 sm:pt-8">
+        <BackLink href={from}>Volver al directorio</BackLink>
 
-          <div className="detail-grid">
-            <div className="detail-content">
-              <header className="entity-heading">
-                <span className="entity-logo" aria-hidden="true">{organization.monogram}</span>
-                <div>
-                  <div className="title-with-status">
-                    <h1>{organization.name}</h1>
-                    {organization.hiring && <span className="status-dot">Contratando</span>}
-                  </div>
-                  <p>{organization.shortDescription}</p>
+        <div className="mt-4 grid gap-10 lg:mt-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-16">
+          <div className="max-w-[680px] min-w-0">
+            <header className="flex items-start gap-4 sm:gap-5">
+              <StartupLogo
+                monogram={organization.monogram}
+                logoUrl={organization.logoUrl}
+                size={64}
+              />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  <h1 className="text-[2rem] leading-[1.08] font-semibold tracking-[-0.04em] sm:text-[2.625rem]">
+                    {organization.name}
+                  </h1>
+                  {openings.length > 0 && (
+                    <Badge tone="success">
+                      {openings.length}{" "}
+                      {openings.length === 1 ? "vacante" : "vacantes"}
+                    </Badge>
+                  )}
                 </div>
-              </header>
-
-              <div className="demo-notice">
-                <span>Registro demostrativo</span>
-                Esta ficha sirve para validar la experiencia del producto; no representa una empresa publicada todavía.
-              </div>
-
-              <section className="detail-section">
-                <h2>Sobre {organization.name}</h2>
-                <p>{organization.description}</p>
-              </section>
-
-              <section className="detail-section">
-                <div className="section-heading-row">
-                  <h2>Oportunidades</h2>
-                  <span>{relatedOpportunities.length}</span>
-                </div>
-                {relatedOpportunities.length ? (
-                  <div className="compact-opportunity-list">
-                    {relatedOpportunities.map((opportunity) => (
-                      <Link href={`/oportunidades/${opportunity.slug}`} key={opportunity.id}>
-                        <span>
-                          <strong>{opportunity.title}</strong>
-                          <small>{opportunity.type} · {opportunity.modality} · {opportunity.location}</small>
-                        </span>
-                        <ArrowUpRight size={17} aria-hidden="true" />
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="muted-copy">No encontramos oportunidades activas de esta startup.</p>
+                <p className="mt-2 text-[17px] leading-7 text-body">
+                  {organization.shortDescription}
+                </p>
+                <p className="mt-2 font-meta text-[13px] tracking-[0.02em] text-muted">
+                  {[
+                    organization.industry,
+                    organization.stage,
+                    organization.city,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+                {organization.websiteUrl && (
+                  <a
+                    className={buttonClass({
+                      variant: "secondary",
+                      size: "sm",
+                      className: "mt-4",
+                    })}
+                    href={organization.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Visitar sitio web
+                    <ArrowUpRight className="size-4" aria-hidden="true" />
+                    <span className="sr-only">(se abre en otra pestaña)</span>
+                  </a>
                 )}
-              </section>
-            </div>
+              </div>
+            </header>
 
-            <aside className="detail-aside" aria-label="Datos de la startup">
-              <dl className="fact-list">
-                <div>
-                  <dt><MapPin size={16} aria-hidden="true" /> Ubicación</dt>
-                  <dd>{organization.city}</dd>
+            {organization.status === "closed" && (
+              <Notice tone="warning" className="mt-6">
+                Este registro está cerrado y no aparece en el directorio activo.
+              </Notice>
+            )}
+            {organization.isDemo && (
+              <Notice title="Registro demostrativo" className="mt-6">
+                Esta ficha sirve para validar la experiencia del producto; no
+                representa una empresa publicada todavía.
+              </Notice>
+            )}
+
+            <section className="mt-10" aria-labelledby="openings-title">
+              <h2
+                id="openings-title"
+                className="text-lg font-semibold tracking-[-0.02em]"
+              >
+                Oportunidades abiertas
+              </h2>
+              {openings.length ? (
+                <div className="link-tree mt-3 [--li-x:36px] [--trunk-bottom:0px] [--trunk-top:12px] [--trunk-x:11px]">
+                  <ul className="pl-9">
+                    {openings.map((opportunity, index) => (
+                      <li
+                        key={opportunity.id}
+                        className={cx(
+                          index === openings.length - 1 && "link-tree-end",
+                        )}
+                      >
+                        <OpeningRow
+                          opportunity={opportunity}
+                          href={`/oportunidades/${opportunity.slug}?from=${encodeURIComponent(from)}`}
+                          today={today}
+                        />
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div>
-                  <dt><Users size={16} aria-hidden="true" /> Equipo</dt>
-                  <dd>{organization.teamSize}</dd>
-                </div>
-                <div>
-                  <dt><BriefcaseBusiness size={16} aria-hidden="true" /> Industria</dt>
-                  <dd>{organization.industry}</dd>
-                </div>
-              </dl>
-              <div className="aside-data">
-                <span>Etapa</span><strong>{organization.stage}</strong>
-                <span>Modalidad</span><strong>{organization.remotePolicy}</strong>
-                <span>Fundación</span><strong>{organization.foundedYear}</strong>
-              </div>
-              <div className="source-stamp">
-                <CheckCircle2 size={16} aria-hidden="true" />
-                <div>
-                  <strong>{organization.sourceLabel}</strong>
-                  <span>Revisado el {formatShortDate(organization.verifiedAt)}</span>
-                </div>
-              </div>
-              <Link className="button-secondary aside-button" href={`/agregar?tipo=reclamo&startup=${organization.slug}`}>
-                ¿Representas a esta startup?
-              </Link>
-            </aside>
+              ) : (
+                <EmptyState
+                  className="mt-4"
+                  title="No hay vacantes abiertas ahora"
+                  actions={
+                    <Link
+                      className={cx(
+                        textLinkClass,
+                        "inline-flex items-center gap-1.5",
+                      )}
+                      href={alertHref}
+                    >
+                      <Bell className="size-4" aria-hidden="true" />
+                      Avisarme cuando publique vacantes
+                    </Link>
+                  }
+                >
+                  Revisamos las fuentes oficiales de forma periódica.
+                </EmptyState>
+              )}
+            </section>
+
+            <DetailSection
+              title={`Sobre ${organization.name}`}
+              className="mt-10"
+            >
+              <Paragraphs text={organization.description} />
+            </DetailSection>
           </div>
-        </article>
-      </main>
-      <SiteFooter />
-    </div>
+
+          <aside
+            className="lg:sticky lg:top-24 lg:self-start"
+            aria-label="Datos de la startup"
+          >
+            <div className="rounded-panel border border-line bg-paper p-5">
+              <FactList
+                className="grid-cols-2"
+                facts={[
+                  {
+                    label: "Ubicación",
+                    value: organization.city || "No indicada",
+                  },
+                  {
+                    label: "Equipo",
+                    value: organization.teamSize || "No indicado",
+                  },
+                  { label: "Industria", value: organization.industry },
+                  {
+                    label: "Etapa",
+                    value: organization.stage || "No indicada",
+                  },
+                  {
+                    label: "Modalidad",
+                    value: organization.remotePolicy || "No indicada",
+                  },
+                  ...(organization.foundedYear > 0
+                    ? [
+                        {
+                          label: "Fundación",
+                          value: String(organization.foundedYear),
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+              <SourceStamp
+                className="mt-5 border-t border-line pt-5"
+                label={organization.sourceLabel}
+                verifiedAt={organization.verifiedAt}
+                sourceUrl={organization.sourceUrl}
+                verb="Revisada"
+                today={today}
+              />
+              {openings.length > 0 && (
+                <Link
+                  className={cx(
+                    textLinkClass,
+                    "mt-5 flex items-center gap-1.5 border-t border-line pt-4 text-sm",
+                  )}
+                  href={alertHref}
+                >
+                  <Bell className="size-4" aria-hidden="true" />
+                  Avisarme de nuevas vacantes
+                </Link>
+              )}
+            </div>
+            <Link
+              className={buttonClass({
+                variant: "quiet",
+                size: "sm",
+                block: true,
+                className: "mt-3",
+              })}
+              href={`/agregar?tipo=reclamo&startup=${organization.slug}`}
+            >
+              ¿Representas a {organization.name}?
+            </Link>
+          </aside>
+        </div>
+      </article>
+    </SiteShell>
   );
 }

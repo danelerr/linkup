@@ -1,0 +1,1 @@
+CREATE INDEX `submissions_user_date_idx` ON `submissions` (`user_id`,`created_at`);

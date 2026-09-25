@@ -1,14 +1,27 @@
 import { sql } from "drizzle-orm";
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull(),
   displayName: text("display_name").notNull(),
   role: text("role").notNull().default("talent"),
-  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-  lastSeenAt: text("last_seen_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  lastSeenAt: text("last_seen_at")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const talentProfiles = sqliteTable("talent_profiles", {
@@ -24,7 +37,9 @@ export const talentProfiles = sqliteTable("talent_profiles", {
   privacy: text("privacy").notNull().default("private"),
   isAdult: integer("is_adult", { mode: "boolean" }).notNull().default(false),
   acceptedTermsAt: text("accepted_terms_at"),
-  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const savedOpportunities = sqliteTable(
@@ -32,7 +47,9 @@ export const savedOpportunities = sqliteTable(
   {
     userId: text("user_id").notNull(),
     opportunitySlug: text("opportunity_slug").notNull(),
-    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [primaryKey({ columns: [table.userId, table.opportunitySlug] })],
 );
@@ -46,8 +63,12 @@ export const savedSearches = sqliteTable(
     queryJson: text("query_json").notNull(),
     frequency: text("frequency").notNull().default("semanal"),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
-    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [index("saved_searches_user_idx").on(table.userId)],
 );
@@ -62,11 +83,18 @@ export const applications = sqliteTable(
     status: text("status").notNull().default("enviada"),
     answersJson: text("answers_json").notNull().default("[]"),
     profileSnapshotJson: text("profile_snapshot_json").notNull().default("{}"),
-    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
-    uniqueIndex("applications_user_opportunity_unique").on(table.userId, table.opportunitySlug),
+    uniqueIndex("applications_user_opportunity_unique").on(
+      table.userId,
+      table.opportunitySlug,
+    ),
     index("applications_user_idx").on(table.userId),
   ],
 );
@@ -79,9 +107,13 @@ export const applicationEvents = sqliteTable(
     status: text("status").notNull(),
     actor: text("actor").notNull(),
     note: text("note").notNull().default(""),
-    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("application_events_application_idx").on(table.applicationId)],
+  (table) => [
+    index("application_events_application_idx").on(table.applicationId),
+  ],
 );
 
 export const organizationMembers = sqliteTable(
@@ -92,7 +124,9 @@ export const organizationMembers = sqliteTable(
     memberRole: text("member_role").notNull().default("viewer"),
     status: text("status").notNull().default("active"),
     approvedBy: text("approved_by").notNull(),
-    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     primaryKey({ columns: [table.organizationSlug, table.userId] }),
@@ -112,11 +146,33 @@ export const submissions = sqliteTable(
     opportunityTitle: text("opportunity_title").notNull().default(""),
     sourceUrl: text("source_url").notNull(),
     notes: text("notes").notNull().default(""),
+    payloadJson: text("payload_json").notNull().default("{}"),
+    canonicalKey: text("canonical_key"),
+    normalizedName: text("normalized_name").notNull().default(""),
     status: text("status").notNull().default("pending"),
-    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("submissions_status_idx").on(table.status)],
+  (table) => [
+    index("submissions_status_idx").on(table.status),
+    uniqueIndex("submissions_pending_source_unique")
+      .on(table.kind, table.canonicalKey)
+      .where(sql`${table.status} = 'pending'`),
+    index("submissions_name_idx").on(
+      table.kind,
+      table.status,
+      table.normalizedName,
+    ),
+    index("submissions_contact_date_idx").on(
+      table.contactEmail,
+      table.createdAt,
+    ),
+    index("submissions_user_date_idx").on(table.userId, table.createdAt),
+  ],
 );
 
 export const moderationDecisions = sqliteTable(
@@ -127,9 +183,13 @@ export const moderationDecisions = sqliteTable(
     actorId: text("actor_id").notNull(),
     status: text("status").notNull(),
     reason: text("reason").notNull(),
-    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("moderation_decisions_submission_idx").on(table.submissionId)],
+  (table) => [
+    index("moderation_decisions_submission_idx").on(table.submissionId),
+  ],
 );
 
 export const auditEvents = sqliteTable("audit_events", {
@@ -139,5 +199,80 @@ export const auditEvents = sqliteTable("audit_events", {
   entityType: text("entity_type").notNull(),
   entityId: text("entity_id").notNull(),
   detailJson: text("detail_json").notNull().default("{}"),
-  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const catalogOrganizations = sqliteTable(
+  "catalog_organizations",
+  {
+    id: text("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    industry: text("industry").notNull(),
+    websiteKey: text("website_key").unique(),
+    status: text("status").notNull().default("draft"),
+    searchText: text("search_text").notNull(),
+    dataJson: text("data_json").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("catalog_organizations_filter_idx").on(table.status, table.industry),
+  ],
+);
+
+export const catalogOpportunities = sqliteTable(
+  "catalog_opportunities",
+  {
+    id: text("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    organizationSlug: text("organization_slug")
+      .notNull()
+      .references(() => catalogOrganizations.slug),
+    title: text("title").notNull(),
+    area: text("area").notNull(),
+    type: text("type").notNull(),
+    modality: text("modality").notNull(),
+    level: text("level").notNull(),
+    status: text("status").notNull().default("draft"),
+    closesAt: text("closes_at"),
+    sourceKey: text("source_key").unique(),
+    searchText: text("search_text").notNull(),
+    dataJson: text("data_json").notNull(),
+    publishedAt: text("published_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("catalog_opportunities_org_idx").on(
+      table.organizationSlug,
+      table.status,
+      table.closesAt,
+    ),
+    index("catalog_opportunities_filter_idx").on(
+      table.status,
+      table.modality,
+      table.type,
+      table.area,
+    ),
+  ],
+);
+
+export const alertNotifications = sqliteTable(
+  "alert_notifications",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    searchId: text("search_id").notNull(),
+    opportunitySlug: text("opportunity_slug").notNull(),
+    createdAt: text("created_at").notNull(),
+    readAt: text("read_at"),
+  },
+  (table) => [
+    uniqueIndex("alert_notification_unique").on(
+      table.searchId,
+      table.opportunitySlug,
+    ),
+    index("alert_notification_user_idx").on(table.userId, table.createdAt),
+  ],
+);

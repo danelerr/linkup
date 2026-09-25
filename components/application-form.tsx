@@ -1,8 +1,19 @@
 "use client";
 
+import { clientRequest } from "@/lib/client-request";
+
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { CheckCircle2, LoaderCircle, LockKeyhole } from "lucide-react";
+import { LoaderCircle, LockKeyhole } from "lucide-react";
+import { buttonClass } from "@/components/ui/button";
+import {
+  Check,
+  checkClass,
+  FormError,
+  hintClass,
+  textareaClass,
+} from "@/components/ui/field";
+import { eyebrowClass } from "@/components/ui/layout";
 import type { TalentProfile } from "@/lib/user-data";
 
 const questions = [
@@ -11,7 +22,15 @@ const questions = [
   "¿Hay algo importante sobre tu disponibilidad que la organización deba saber?",
 ];
 
-export function ApplicationForm({ opportunitySlug, profile }: { opportunitySlug: string; profile: TalentProfile }) {
+export function ApplicationForm({
+  opportunitySlug,
+  profile,
+  isDemo,
+}: {
+  opportunitySlug: string;
+  profile: TalentProfile;
+  isDemo: boolean;
+}) {
   const router = useRouter();
   const [answers, setAnswers] = useState(["", "", ""]);
   const [consent, setConsent] = useState(false);
@@ -27,14 +46,20 @@ export function ApplicationForm({ opportunitySlug, profile }: { opportunitySlug:
     }
     setState("sending");
     setMessage("");
-    const response = await fetch("/api/applications", {
+    const response = await clientRequest("/api/applications", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ opportunitySlug, answers }),
+      body: JSON.stringify({ opportunitySlug, answers, consent }),
     });
-    const payload = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      code?: string;
+    };
     if (!response.ok) {
-      if (payload.code === "PROFILE_INCOMPLETE") router.push(`/mi-linkup/perfil?return_to=${encodeURIComponent(`/oportunidades/${opportunitySlug}/postular`)}`);
+      if (payload.code === "PROFILE_INCOMPLETE")
+        router.push(
+          `/mi-linkup/perfil?return_to=${encodeURIComponent(`/oportunidades/${opportunitySlug}/postular`)}`,
+        );
       else {
         setState("error");
         setMessage(payload.error ?? "No pudimos enviar la postulación.");
@@ -44,59 +69,121 @@ export function ApplicationForm({ opportunitySlug, profile }: { opportunitySlug:
     router.push("/mi-linkup/postulaciones?enviada=1");
   }
 
+  const shared = [
+    ["Objetivo", profile.objective],
+    ["Ubicación", `${profile.city}, ${profile.country}`],
+    ["Modalidad", profile.modality],
+    ["Disponibilidad", profile.availability],
+    ["Habilidades", profile.skills.join(" · ")],
+    ["Sobre ti", profile.bio],
+    ["Evidencia", profile.portfolioUrl],
+  ].filter(([, value]) => value);
+
   return (
-    <form className="application-form" onSubmit={submit}>
-      <section className="share-review">
-        <div className="share-review-heading">
-          <LockKeyhole size={18} aria-hidden="true" />
+    <form className="grid gap-10" onSubmit={submit}>
+      <section className="rounded-panel border border-line bg-paper p-5 sm:p-6">
+        <div className="flex gap-3">
+          <LockKeyhole
+            className="mt-0.5 size-5 shrink-0 text-action"
+            aria-hidden="true"
+          />
           <div>
-            <h2>Esto es lo que compartirás</h2>
-            <p>Una copia de estos datos queda asociada a esta postulación, aunque luego edites tu perfil.</p>
+            <h2 className="text-base font-semibold">
+              Esto es lo que compartirás
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-body">
+              Tu nombre, tu correo y una copia de estos datos, solo con las
+              personas autorizadas a revisar este proceso. La copia no cambia
+              cuando edites tu perfil.
+            </p>
           </div>
         </div>
-        <dl>
-          <div><dt>Objetivo</dt><dd>{profile.objective}</dd></div>
-          <div><dt>Ubicación</dt><dd>{profile.city}, {profile.country}</dd></div>
-          <div><dt>Modalidad</dt><dd>{profile.modality}</dd></div>
-          <div><dt>Disponibilidad</dt><dd>{profile.availability}</dd></div>
-          <div><dt>Habilidades</dt><dd>{profile.skills.join(" · ")}</dd></div>
-          {profile.portfolioUrl && <div><dt>Evidencia</dt><dd>{profile.portfolioUrl}</dd></div>}
+        <dl className="mt-5 grid gap-x-6 gap-y-4 border-t border-line pt-5 sm:grid-cols-2">
+          {shared.map(([label, value]) => (
+            <div
+              key={label}
+              className={label === "Sobre ti" ? "sm:col-span-2" : undefined}
+            >
+              <dt className="font-meta text-xs font-semibold tracking-[0.08em] text-muted uppercase">
+                {label}
+              </dt>
+              <dd className="mt-1 text-[15px] break-words text-ink">{value}</dd>
+            </div>
+          ))}
         </dl>
       </section>
 
-      <section className="application-questions">
+      <section className="grid gap-6">
         <div>
-          <span className="eyebrow">Tres preguntas</span>
-          <h2>Responde con ejemplos concretos.</h2>
+          <p className={eyebrowClass}>Tres preguntas</p>
+          <h2 className="text-xl font-semibold tracking-[-0.02em]">
+            Responde con ejemplos concretos.
+          </h2>
         </div>
         {questions.map((question, index) => (
-          <label className="field-label" key={question}>
-            <span>{index + 1}. {question}</span>
+          <label className="grid gap-2" key={question}>
+            <span className="text-[15px] leading-6 font-semibold text-ink">
+              {index + 1}. {question}
+              {index === 2 && (
+                <span className="ml-1.5 font-normal text-muted">
+                  (opcional)
+                </span>
+              )}
+            </span>
             <textarea
+              className={textareaClass}
               required={index < 2}
               maxLength={800}
               value={answers[index]}
-              onChange={(event) => setAnswers(answers.map((answer, answerIndex) => answerIndex === index ? event.target.value : answer))}
-              placeholder={index === 0 ? "En pocas frases..." : "Puedes usar una experiencia académica, personal, voluntaria o laboral..."}
+              onChange={(event) =>
+                setAnswers(
+                  answers.map((answer, answerIndex) =>
+                    answerIndex === index ? event.target.value : answer,
+                  ),
+                )
+              }
+              placeholder={
+                index === 0
+                  ? "En pocas frases…"
+                  : "Puedes usar una experiencia académica, personal, voluntaria o laboral…"
+              }
             />
-            <small>{answers[index].length}/800</small>
+            <span className={`${hintClass} text-right tabular-nums`}>
+              {answers[index].length}/800
+            </span>
           </label>
         ))}
       </section>
 
-      <div className="application-consent">
-        <label className="check-field">
-          <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-          <span>Confirmo que revisé esta información y autorizo compartirla con la organización para este proceso.</span>
-        </label>
-        <div className="demo-consent"><CheckCircle2 size={16} aria-hidden="true" /> Esta es una simulación. No será enviada a una organización real.</div>
-      </div>
-
-      <div className="form-submit-row">
-        <p className="form-message is-error" role="alert">{message}</p>
-        <button className="button-primary" type="submit" disabled={state === "sending"}>
-          {state === "sending" && <LoaderCircle className="spin" size={17} aria-hidden="true" />}
-          {state === "sending" ? "Enviando" : "Confirmar postulación"}
+      <div className="grid gap-4 border-t border-line pt-6">
+        <Check
+          input={
+            <input
+              className={checkClass}
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => setConsent(event.target.checked)}
+            />
+          }
+        >
+          Confirmo que revisé esta información y autorizo compartirla con la
+          organización para este proceso.
+        </Check>
+        {isDemo && (
+          <p className="rounded-control border border-warning/25 bg-warning-soft px-3.5 py-2.5 text-sm text-warning">
+            Esta es una simulación. No compartas datos reales.
+          </p>
+        )}
+        {state === "error" && <FormError>{message}</FormError>}
+        <button
+          className={buttonClass({ className: "sm:justify-self-start" })}
+          type="submit"
+          disabled={state === "sending"}
+        >
+          {state === "sending" && (
+            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+          )}
+          {state === "sending" ? "Enviando…" : "Confirmar postulación"}
         </button>
       </div>
     </form>

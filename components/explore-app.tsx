@@ -1,324 +1,614 @@
 "use client";
-
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Bell, ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import {
-  industries,
-  opportunities,
-  opportunityAreas,
-  opportunityTypes,
-  organizations,
-  type Opportunity,
-  type Organization,
-} from "@/lib/catalog";
+  ArrowRight,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
+} from "lucide-react";
+import { StateIcon } from "@/components/state-icon";
+import { OpeningRow } from "@/components/opening-row";
+import { Badge } from "@/components/ui/badge";
+import { buttonClass, textLinkClass } from "@/components/ui/button";
+import { selectClass } from "@/components/ui/field";
+import { StartupLogo } from "@/components/ui/startup-logo";
+import { cx } from "@/lib/cx";
+import { modalities, opportunityTypes } from "@/lib/catalog-types";
+import {
+  directoryHref,
+  filterParams,
+  parseFilters,
+  type DirectoryFilters,
+} from "@/lib/directory-filters";
+import type { DirectoryPage, DirectoryResult } from "@/lib/directory";
 
-type ExploreAppProps = {
-  initialQuery?: string;
-  initialIndustry?: string;
-  initialArea?: string;
-  initialType?: string;
-  initialModality?: string;
-  initialHiring?: boolean;
-};
-
-type DirectoryResult = {
-  organization: Organization;
-  matchingOpportunities: Opportunity[];
-};
-
-const PAGE_SIZE = 6;
-
-function searchable(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase("es");
-}
-
-function opportunitySearchText(opportunity: Opportunity) {
-  return searchable(
-    `${opportunity.title} ${opportunity.summary} ${opportunity.area} ${opportunity.type} ${opportunity.modality}`,
-  );
-}
+const filterKeys = ["industria", "area", "tipo", "modalidad", "nivel"] as const;
 
 export function ExploreApp({
-  initialQuery = "",
-  initialIndustry = "",
-  initialArea = "",
-  initialType = "",
-  initialModality = "",
-  initialHiring = false,
-}: ExploreAppProps) {
-  const [query, setQuery] = useState(initialQuery);
-  const [industry, setIndustry] = useState(initialIndustry);
-  const [area, setArea] = useState(initialArea);
-  const [type, setType] = useState(initialType);
-  const [modality, setModality] = useState(initialModality);
-  const [hiring, setHiring] = useState(initialHiring);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const filterPanelRef = useRef<HTMLDivElement>(null);
-
-  const activeFilterCount = [industry, area, type, modality].filter(Boolean).length + (hiring ? 1 : 0);
-  const hasOpportunityFilters = Boolean(area || type || modality);
-
-  const results = useMemo<DirectoryResult[]>(() => {
-    const needle = searchable(query.trim());
-
-    return organizations.flatMap((organization) => {
-      const organizationOpportunities = opportunities.filter(
-        (opportunity) => opportunity.organizationSlug === organization.slug,
-      );
-      const organizationMatchesQuery = !needle || searchable(
-        `${organization.name} ${organization.shortDescription} ${organization.industry} ${organization.city}`,
-      ).includes(needle);
-      const opportunitiesMatchingQuery = organizationOpportunities.filter((opportunity) => (
-        !needle || opportunitySearchText(opportunity).includes(needle)
-      ));
-      const matchesQuery = organizationMatchesQuery || opportunitiesMatchingQuery.length > 0;
-      const matchingOpportunities = organizationOpportunities.filter((opportunity) => {
-        const matchesRoleQuery = organizationMatchesQuery || !needle || opportunitySearchText(opportunity).includes(needle);
-        return matchesRoleQuery
-          && (!area || opportunity.area === area)
-          && (!type || opportunity.type === type)
-          && (!modality || opportunity.modality === modality);
-      });
-
-      const matchesIndustry = !industry || organization.industry === industry;
-      const matchesOpenings = (!hiring || organizationOpportunities.length > 0)
-        && (!hasOpportunityFilters || matchingOpportunities.length > 0);
-
-      if (!matchesQuery || !matchesIndustry || !matchesOpenings) return [];
-
-      return [{ organization, matchingOpportunities }];
-    });
-  }, [area, hasOpportunityFilters, hiring, industry, modality, query, type]);
-
-  const visibleResults = results.slice(0, visibleCount);
-  const visibleOpportunityCount = results.reduce(
-    (total, result) => total + result.matchingOpportunities.length,
-    0,
+  filters,
+  data,
+}: {
+  filters: DirectoryFilters;
+  data: DirectoryPage;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  // `sent` is the normalized query this search box last navigated to. When the URL
+  // catches up with it, keep what the person typed meanwhile (a trailing space,
+  // more letters); any other URL change, such as going back, replaces the text.
+  const [search, setSearch] = useState({
+    value: filters.q,
+    source: filters.q,
+    sent: filters.q,
+  });
+  if (search.source !== filters.q)
+    setSearch(
+      filters.q === search.sent
+        ? { ...search, source: filters.q }
+        : { value: filters.q, source: filters.q, sent: filters.q },
+    );
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(filters);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
   );
+  const href = directoryHref({ ...filters, pagina: data.page });
+  const active = filterKeys.filter((key) => filters[key]);
+  const searching = Boolean(filters.q || active.length || filters.abiertas);
+  const alertHref = `/mi-linkup/alertas?${filterParams({ ...filters, pagina: 1 })}`;
+  const pages = Math.ceil(data.total / data.pageSize);
+  const firstIdle = data.rows.findIndex((row) => row.openingCount === 0);
+  const idleHeadingAt = firstIdle > 0 || data.page > 1 ? firstIdle : -1;
 
+  function navigate(change: Partial<DirectoryFilters>, replace = false) {
+    clearTimeout(searchTimer.current);
+    const next = { ...filters, q: search.value, pagina: 1, ...change };
+    const sent = parseFilters({ q: next.q }).q;
+    setSearch((current) => ({ ...current, sent }));
+    const target = directoryHref(next);
+    startTransition(() =>
+      replace
+        ? router.replace(target, { scroll: false })
+        : router.push(target, { scroll: false }),
+    );
+  }
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
   useEffect(() => {
-    const url = new URL(window.location.href);
-    const setOrDelete = (key: string, value: string) => {
-      if (value) url.searchParams.set(key, value);
-      else url.searchParams.delete(key);
-    };
-
-    setOrDelete("q", query.trim());
-    setOrDelete("industria", industry);
-    setOrDelete("area", area);
-    setOrDelete("tipo", type);
-    setOrDelete("modalidad", modality);
-    if (hiring) url.searchParams.set("abiertas", "1");
-    else url.searchParams.delete("abiertas");
-    url.searchParams.delete("vista");
-    url.searchParams.delete("pais");
-    url.searchParams.delete("contratando");
-
-    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
-  }, [area, hiring, industry, modality, query, type]);
-
-  useEffect(() => {
-    function closeOnOutsideClick(event: MouseEvent) {
-      if (filterPanelRef.current && !filterPanelRef.current.contains(event.target as Node)) {
-        setFiltersOpen(false);
-      }
-    }
-    if (filtersOpen) document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
-  }, [filtersOpen]);
-
-  function clearFilters() {
-    setIndustry("");
-    setArea("");
-    setType("");
-    setModality("");
-    setHiring(false);
-    setVisibleCount(PAGE_SIZE);
+    const element = dialog.current;
+    if (open && element && !element.open) element.showModal();
+    else if (!open && element?.open) element.close();
+  }, [open]);
+  function entityHref(path: string) {
+    return `${path}?from=${encodeURIComponent(href)}`;
   }
 
   return (
-    <section className="explore" aria-labelledby="explore-title">
-      <div className="explore-intro">
-        <h1 id="explore-title">Descubre quién está construyendo y dónde puedes sumarte.</h1>
-        <p>Startups y sus oportunidades, en una sola búsqueda.</p>
-      </div>
-
-      <label className="search-box">
-        <Search size={22} strokeWidth={1.8} aria-hidden="true" />
-        <span className="sr-only">Buscar en LinkUp</span>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setVisibleCount(PAGE_SIZE);
-          }}
-          placeholder="Busca una startup, industria o rol"
-          autoComplete="off"
-        />
-        {query && (
-          <button
-            className="clear-search"
-            type="button"
-            onClick={() => { setQuery(""); setVisibleCount(PAGE_SIZE); }}
-            aria-label="Limpiar búsqueda"
-          >
-            <X size={18} aria-hidden="true" />
-          </button>
-        )}
-      </label>
-
-      <div className="explore-controls">
-        <button
-          type="button"
-          className={hiring ? "opening-toggle is-active" : "opening-toggle"}
-          aria-pressed={hiring}
-          onClick={() => { setHiring((value) => !value); setVisibleCount(PAGE_SIZE); }}
+    <section
+      className="mx-auto w-full max-w-[1000px] pt-9 pb-20 sm:pt-16"
+      aria-labelledby="explore-title"
+    >
+      <header className="max-w-3xl">
+        <h1
+          id="explore-title"
+          className="text-[2.125rem] leading-[1.04] font-semibold tracking-[-0.045em] text-balance sm:text-5xl lg:text-[3.5rem]"
         >
-          <span aria-hidden="true" />
-          Con oportunidades
-        </button>
+          Encuentra dónde sumarte.
+        </h1>
+        <CatalogPulse catalog={data.catalog} />
+      </header>
 
-        <div className="filter-wrap" ref={filterPanelRef}>
-          <button
-            className={activeFilterCount > (hiring ? 1 : 0) ? "filter-trigger has-filters" : "filter-trigger"}
-            type="button"
-            aria-expanded={filtersOpen}
-            aria-controls="filter-panel"
-            onClick={() => setFiltersOpen((value) => !value)}
-          >
-            <SlidersHorizontal size={17} aria-hidden="true" />
-            Filtros
-            {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
-            <ChevronDown size={15} aria-hidden="true" />
-          </button>
-
-          {filtersOpen && (
-            <div className="filter-panel" id="filter-panel">
-              <div className="filter-panel-heading">
-                <strong>Filtrar el directorio</strong>
-                <button type="button" className="icon-button filter-close" onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros">
-                  <X size={19} aria-hidden="true" />
-                </button>
-              </div>
-              <label className="field-label">
-                Industria
-                <select value={industry} onChange={(event) => { setIndustry(event.target.value); setVisibleCount(PAGE_SIZE); }}>
-                  <option value="">Todas las industrias</option>
-                  {industries.map((item) => <option value={item} key={item}>{item}</option>)}
-                </select>
-              </label>
-              <label className="field-label">
-                Área del rol
-                <select value={area} onChange={(event) => { setArea(event.target.value); setVisibleCount(PAGE_SIZE); }}>
-                  <option value="">Todas las áreas</option>
-                  {opportunityAreas.map((item) => <option value={item} key={item}>{item}</option>)}
-                </select>
-              </label>
-              <label className="field-label">
-                Tipo de oportunidad
-                <select value={type} onChange={(event) => { setType(event.target.value); setVisibleCount(PAGE_SIZE); }}>
-                  <option value="">Todos los tipos</option>
-                  {opportunityTypes.map((item) => <option value={item} key={item}>{item}</option>)}
-                </select>
-              </label>
-              <label className="field-label">
-                Modalidad
-                <select value={modality} onChange={(event) => { setModality(event.target.value); setVisibleCount(PAGE_SIZE); }}>
-                  <option value="">Cualquier modalidad</option>
-                  <option value="Remoto">Remoto</option>
-                  <option value="Híbrido">Híbrido</option>
-                  <option value="Presencial">Presencial</option>
-                </select>
-              </label>
-              <label className="check-field">
-                <input type="checkbox" checked={hiring} onChange={(event) => { setHiring(event.target.checked); setVisibleCount(PAGE_SIZE); }} />
-                <span>Mostrar solo startups con oportunidades</span>
-              </label>
-              <div className="filter-actions">
-                <button type="button" className="text-button" onClick={clearFilters} disabled={!activeFilterCount}>
-                  Limpiar
-                </button>
-                <button type="button" className="button-primary button-small" onClick={() => setFiltersOpen(false)}>
-                  Ver resultados
-                </button>
-              </div>
-            </div>
+      <form
+        role="search"
+        className="mt-8 sm:mt-10"
+        onSubmit={(event) => {
+          event.preventDefault();
+          navigate({ q: search.value }, true);
+        }}
+      >
+        <div className="relative flex h-14 items-center gap-3 overflow-hidden rounded-panel border border-line-strong bg-paper px-4 text-muted shadow-float transition focus-within:border-action focus-within:ring-4 focus-within:ring-action/10 sm:h-16 sm:gap-3.5 sm:px-5">
+          <Search
+            className="size-5 shrink-0"
+            strokeWidth={1.8}
+            aria-hidden="true"
+          />
+          <label className="sr-only" htmlFor="directory-search">
+            Buscar en LinkUp
+          </label>
+          <input
+            id="directory-search"
+            type="search"
+            className="h-full w-full min-w-0 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted/80 sm:text-[17px]"
+            value={search.value}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSearch((current) => ({ ...current, value }));
+              clearTimeout(searchTimer.current);
+              searchTimer.current = setTimeout(
+                () => navigate({ q: value }, true),
+                300,
+              );
+            }}
+            placeholder="Busca una startup, industria o rol"
+            autoComplete="off"
+            enterKeyHint="search"
+            maxLength={120}
+          />
+          {search.value && (
+            <button
+              className="grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-ink"
+              type="button"
+              onClick={() => {
+                setSearch((current) => ({ ...current, value: "" }));
+                navigate({ q: "" }, true);
+              }}
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="size-[18px]" aria-hidden="true" />
+            </button>
+          )}
+          {pending && (
+            <span
+              className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden"
+              aria-hidden="true"
+            >
+              <span className="block h-full w-2/5 link-gradient animate-link-sweep" />
+            </span>
           )}
         </div>
+      </form>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <div
+          className="inline-flex rounded-full border border-line bg-surface p-1"
+          role="group"
+          aria-label="Qué startups mostrar"
+        >
+          {(
+            [
+              ["", "Todas"],
+              ["1", "Con vacantes"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={filters.abiertas === value}
+              onClick={() =>
+                filters.abiertas !== value && navigate({ abiertas: value })
+              }
+              className={cx(
+                "min-h-9 rounded-full px-3.5 text-[13px] font-semibold transition-colors sm:px-4",
+                filters.abiertas === value
+                  ? "border border-line bg-paper text-ink"
+                  : "border border-transparent text-muted hover:text-ink",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <button
+          className={cx(
+            "inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-colors",
+            active.length
+              ? "border-action/30 bg-action/5 text-action"
+              : "border-transparent text-body hover:border-line hover:bg-surface hover:text-ink",
+          )}
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => {
+            setDraft(filters);
+            setOpen(true);
+          }}
+        >
+          <StateIcon state={open ? "close" : "filters"} />
+          Filtros
+          {active.length > 0 && (
+            <span className="grid size-5 place-items-center rounded-full bg-action font-meta text-xs text-white">
+              <span className="sr-only">activos: </span>
+              {active.length}
+            </span>
+          )}
+        </button>
       </div>
 
-      <div className="results-heading" aria-live="polite">
-        <span>
-          {results.length} {results.length === 1 ? "startup" : "startups"}
-          <i aria-hidden="true">·</i>
-          {visibleOpportunityCount} {visibleOpportunityCount === 1 ? "oportunidad" : "oportunidades"}
-        </span>
-        <Link className="results-action" href={`/mi-linkup/alertas?query=${encodeURIComponent(query.trim())}`}>
-          <Bell size={14} aria-hidden="true" /> Crear alerta
-        </Link>
-      </div>
-
-      <div className="directory-list">
-        {visibleResults.length === 0 ? (
-          <div className="empty-state">
-            <p>No encontramos resultados con esta búsqueda.</p>
-            <button type="button" className="text-button" onClick={() => { setQuery(""); clearFilters(); }}>
-              Quitar búsqueda y filtros
+      <dialog
+        ref={dialog}
+        onClose={() => setOpen(false)}
+        aria-labelledby="filters-title"
+        className="m-auto w-[min(420px,calc(100vw-2rem))] rounded-panel border border-line bg-paper text-ink shadow-popover max-sm:mb-0 max-sm:w-full max-sm:max-w-full max-sm:rounded-b-none"
+      >
+        <form
+          className="grid gap-5 p-5 sm:p-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            navigate(draft);
+            setOpen(false);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <h2 id="filters-title" className="text-lg font-semibold">
+              Filtros
+            </h2>
+            <button
+              className="grid size-10 place-items-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-ink"
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Cerrar filtros"
+            >
+              <StateIcon state="close" />
             </button>
           </div>
-        ) : visibleResults.map(({ organization, matchingOpportunities }) => (
-          <article className="directory-item" key={organization.id}>
-            <div className="directory-company">
-              <Link className="directory-logo" href={`/startups/${organization.slug}`} aria-label={`Ver ${organization.name}`}>
-                {organization.monogram}
-              </Link>
-              <div className="directory-company-copy">
-                <div className="directory-title-line">
-                  <Link href={`/startups/${organization.slug}`}>{organization.name}</Link>
-                  {matchingOpportunities.length > 0 && (
-                    <span className="opening-count">
-                      {matchingOpportunities.length} {matchingOpportunities.length === 1 ? "abierta" : "abiertas"}
-                    </span>
-                  )}
-                </div>
-                <p>{organization.shortDescription}</p>
-                <span className="directory-meta">{organization.industry} · {organization.stage} · {organization.city}</span>
-              </div>
-              <Link className="directory-profile-link" href={`/startups/${organization.slug}`}>
-                Ver startup <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-            </div>
-
-            {matchingOpportunities.length > 0 && (
-              <div className="directory-openings" aria-label={`Oportunidades en ${organization.name}`}>
-                {matchingOpportunities.slice(0, 3).map((opportunity) => (
-                  <Link className="directory-opening" href={`/oportunidades/${opportunity.slug}`} key={opportunity.id}>
-                    <span className="opening-title">{opportunity.title}</span>
-                    <span className="opening-meta">{opportunity.type} · {opportunity.modality}</span>
-                    <ArrowRight size={16} aria-hidden="true" />
-                  </Link>
+          {(
+            [
+              ["industria", "Industria", data.facets.industries],
+              ["area", "Área del rol", data.facets.areas],
+              ["tipo", "Tipo de oportunidad", opportunityTypes],
+              ["modalidad", "Modalidad", modalities],
+              ["nivel", "Experiencia", data.facets.levels],
+            ] as const
+          ).map(([key, label, options]) => (
+            <label className="grid gap-1.5" key={key}>
+              <span className="text-sm font-semibold text-body">{label}</span>
+              <select
+                className={selectClass}
+                value={draft[key]}
+                onChange={(event) =>
+                  setDraft({ ...draft, [key]: event.target.value })
+                }
+              >
+                <option value="">Cualquiera</option>
+                {[
+                  ...new Set([...options, ...(draft[key] ? [draft[key]] : [])]),
+                ].map((value) => (
+                  <option key={value}>{value}</option>
                 ))}
-              </div>
-            )}
-          </article>
-        ))}
-      </div>
+              </select>
+            </label>
+          ))}
+          <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
+            <button
+              type="button"
+              className={textLinkClass}
+              onClick={() =>
+                setDraft({
+                  ...draft,
+                  industria: "",
+                  area: "",
+                  tipo: "",
+                  modalidad: "",
+                  nivel: "",
+                })
+              }
+            >
+              Limpiar
+            </button>
+            <button className={buttonClass()}>Ver resultados</button>
+          </div>
+        </form>
+      </dialog>
 
-      {visibleCount < results.length && (
-        <div className="load-more-wrap">
-          <button className="button-secondary" type="button" onClick={() => setVisibleCount((value) => value + PAGE_SIZE)}>
-            Ver más
-          </button>
+      {active.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2" aria-label="Filtros activos">
+          {active.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-paper pr-2 pl-3 text-[13px] font-medium text-body transition-colors hover:border-line-strong hover:text-ink"
+              onClick={() => navigate({ [key]: "" })}
+              aria-label={`Quitar filtro ${filters[key]}`}
+            >
+              {filters[key]}
+              <X className="size-3.5" aria-hidden="true" />
+            </button>
+          ))}
         </div>
       )}
 
-      <p className="demo-disclosure">Los registros actuales son demostrativos.</p>
+      <div className="mt-6 flex min-h-11 items-center justify-between gap-3 border-b border-line pb-2">
+        <p
+          className="font-meta text-[13px] font-semibold tracking-[0.02em] text-muted"
+          role="status"
+        >
+          {pending
+            ? "Buscando…"
+            : `${data.total} ${data.total === 1 ? "startup" : "startups"} · ${data.opportunityCount} ${data.opportunityCount === 1 ? "oportunidad" : "oportunidades"}`}
+        </p>
+        <div className="flex items-center gap-1">
+          <label className="sr-only" htmlFor="directory-sort">
+            Ordenar resultados
+          </label>
+          <select
+            id="directory-sort"
+            className="select-chevron min-h-9 rounded-full bg-transparent pl-3 text-[13px] font-semibold text-body transition-colors hover:bg-surface"
+            value={filters.orden}
+            onChange={(event) => navigate({ orden: event.target.value })}
+          >
+            <option value="recientes">Recientes</option>
+            <option value="nombre">A–Z</option>
+          </select>
+          <Link
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-action transition-colors hover:bg-action/5"
+            href={alertHref}
+          >
+            <Bell className="size-4" aria-hidden="true" />
+            <span className="max-sm:sr-only">Crear alerta</span>
+          </Link>
+        </div>
+      </div>
+
+      <div
+        className={cx(
+          "transition-opacity duration-150",
+          pending && "opacity-60",
+        )}
+        aria-busy={pending}
+      >
+        {data.rows.length === 0 ? (
+          <NoResults
+            searching={searching}
+            query={filters.q}
+            facets={data.facets}
+            alertHref={alertHref}
+          />
+        ) : (
+          <ol>
+            {data.rows.map((row, index) => (
+              <li key={row.organization.id}>
+                {index === idleHeadingAt && (
+                  <p className="border-b border-line pt-8 pb-3 font-meta text-xs font-semibold tracking-[0.08em] text-muted uppercase">
+                    Sin vacantes abiertas ahora
+                  </p>
+                )}
+                <DirectoryRow
+                  {...row}
+                  today={data.today}
+                  entityHref={entityHref}
+                />
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      {pages > 1 && (
+        <nav
+          className="mt-8 flex items-center justify-between gap-4 text-sm font-semibold"
+          aria-label="Páginas del directorio"
+        >
+          {data.page > 1 ? (
+            <Link
+              className={buttonClass({ variant: "secondary", size: "sm" })}
+              href={directoryHref({ ...filters, pagina: data.page - 1 })}
+            >
+              <ChevronLeft className="size-4" aria-hidden="true" />
+              Anterior
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="font-meta text-[13px] text-muted">
+            Página {data.page} de {pages}
+          </span>
+          {data.page < pages ? (
+            <Link
+              className={buttonClass({ variant: "secondary", size: "sm" })}
+              href={directoryHref({ ...filters, pagina: data.page + 1 })}
+            >
+              Siguiente
+              <ChevronRight className="size-4" aria-hidden="true" />
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
+      {data.hasDemo && (
+        <p className="mt-8 text-center text-xs text-muted">
+          Los registros marcados como demostrativos son ejemplos para probar
+          LinkUp.
+        </p>
+      )}
     </section>
+  );
+}
+
+function CatalogPulse({ catalog }: { catalog: DirectoryPage["catalog"] }) {
+  const figure = "font-meta text-[1.0625rem] font-bold text-ink tabular-nums";
+  if (!catalog.startups)
+    return (
+      <p className="mt-4 text-base text-body sm:text-lg">
+        Startups y oportunidades, en una sola búsqueda.
+      </p>
+    );
+  return (
+    <p className="mt-4 text-base text-body sm:text-lg">
+      <span className={figure}>{catalog.openings}</span>{" "}
+      {catalog.openings === 1
+        ? "oportunidad abierta"
+        : "oportunidades abiertas"}{" "}
+      en <span className={figure}>{catalog.startups}</span>{" "}
+      {catalog.startups === 1 ? "startup" : "startups"}
+      {catalog.newThisWeek > 0 && (
+        <>
+          {" · "}
+          <span className={figure}>{catalog.newThisWeek}</span>{" "}
+          {catalog.newThisWeek === 1 ? "nueva" : "nuevas"} esta semana
+        </>
+      )}
+      .
+    </p>
+  );
+}
+
+function DirectoryRow({
+  organization,
+  matchingOpportunities,
+  openingCount,
+  today,
+  entityHref,
+}: DirectoryResult & {
+  today: string;
+  entityHref: (path: string) => string;
+}) {
+  const startupHref = entityHref(`/startups/${organization.slug}`);
+  const hiring = matchingOpportunities.length > 0;
+  return (
+    <article
+      className={cx(
+        "grid grid-cols-[48px_minmax(0,1fr)] gap-x-(--gap) border-b border-line py-6 [--gap:14px] sm:[--gap:20px]",
+        hiring &&
+          "link-tree overflow-hidden [--li-x:calc(48px_+_var(--gap))] [--tree-mask:120px] [--trunk-bottom:24px] [--trunk-top:82px] [--trunk-x:24px]",
+      )}
+    >
+      <Link
+        href={startupHref}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="self-start transition-transform duration-150 hover:-translate-y-px"
+      >
+        <StartupLogo
+          monogram={organization.monogram}
+          logoUrl={organization.logoUrl}
+        />
+      </Link>
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <h2 className="min-w-0 truncate text-lg leading-6 font-semibold tracking-[-0.02em]">
+            <Link
+              className="transition-colors hover:text-action"
+              href={startupHref}
+            >
+              {organization.name}
+            </Link>
+          </h2>
+          {openingCount > 0 && (
+            <Badge tone="success">
+              {openingCount} {openingCount === 1 ? "vacante" : "vacantes"}
+            </Badge>
+          )}
+        </div>
+        <p className="mt-1 line-clamp-2 max-w-[680px] text-[15px] leading-6 text-body">
+          {organization.shortDescription}
+        </p>
+        <p className="mt-1.5 font-meta text-[13px] tracking-[0.02em] text-muted">
+          {[organization.industry, organization.stage, organization.city]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      </div>
+      {hiring && (
+        <div className="col-start-2 mt-3">
+          <ul aria-label={`Oportunidades en ${organization.name}`}>
+            {matchingOpportunities.map((opportunity, index) => (
+              <li
+                key={opportunity.id}
+                className={cx(
+                  index === matchingOpportunities.length - 1 && "link-tree-end",
+                )}
+              >
+                <OpeningRow
+                  opportunity={opportunity}
+                  href={entityHref(`/oportunidades/${opportunity.slug}`)}
+                  today={today}
+                />
+              </li>
+            ))}
+          </ul>
+          {openingCount > matchingOpportunities.length && (
+            <Link
+              className="mt-1 inline-flex items-center gap-1.5 py-1.5 text-[13px] font-semibold text-action hover:underline"
+              href={startupHref}
+            >
+              Ver las {openingCount} oportunidades
+              <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function NoResults({
+  searching,
+  query,
+  facets,
+  alertHref,
+}: {
+  searching: boolean;
+  query: string;
+  facets: DirectoryPage["facets"];
+  alertHref: string;
+}) {
+  if (!searching)
+    return (
+      <div className="py-16 text-center">
+        <p className="text-lg font-semibold">
+          El directorio está listo para sus primeras startups.
+        </p>
+        <p className="mx-auto mt-2 max-w-md text-[15px] leading-6 text-body">
+          Cada registro se revisa contra una fuente oficial antes de publicarse.
+        </p>
+        <Link className={buttonClass({ className: "mt-6" })} href="/agregar">
+          Agregar una startup u oportunidad
+        </Link>
+      </div>
+    );
+  const suggestions = [
+    ...facets.areas.map((value) => ({ key: "area", value })),
+    ...facets.industries.map((value) => ({ key: "industria", value })),
+  ].slice(0, 6);
+  return (
+    <div className="py-14 text-center">
+      <p className="text-lg font-semibold text-balance">
+        No encontramos resultados
+        {query ? (
+          <>
+            {" "}
+            para <q className="text-action">{query}</q>
+          </>
+        ) : (
+          " con estos filtros"
+        )}
+        .
+      </p>
+      <p className="mx-auto mt-2 max-w-md text-[15px] leading-6 text-body">
+        Quita un filtro, prueba una palabra más general o crea una alerta y te
+        avisamos cuando aparezca algo.
+      </p>
+      {suggestions.length > 0 && (
+        <div className="mt-6">
+          <p className="font-meta text-xs font-semibold tracking-[0.08em] text-muted uppercase">
+            Prueba con
+          </p>
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {suggestions.map((item) => (
+              <Link
+                key={`${item.key}-${item.value}`}
+                className="inline-flex min-h-9 items-center rounded-full border border-line bg-paper px-3.5 text-sm font-medium text-body transition-colors hover:border-action/40 hover:text-action"
+                href={directoryHref({ [item.key]: item.value })}
+              >
+                {item.value}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+        <Link className={buttonClass({ variant: "secondary" })} href="/">
+          Quitar búsqueda y filtros
+        </Link>
+        <Link className={textLinkClass} href={alertHref}>
+          Avisarme cuando haya coincidencias
+        </Link>
+      </div>
+    </div>
   );
 }

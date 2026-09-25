@@ -1,9 +1,10 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getCurrentUser } from "@/lib/session";
 import { exportUserData, syncUser } from "@/lib/user-data";
 
 export async function GET() {
-  const user = await getChatGPTUser();
-  if (!user) return Response.json({ error: "Debes ingresar." }, { status: 401 });
+  const user = await getCurrentUser();
+  if (!user)
+    return Response.json({ error: "Debes ingresar." }, { status: 401 });
   await syncUser(user);
   const payload = await exportUserData(user.userId);
   return new Response(JSON.stringify(payload, null, 2), {
