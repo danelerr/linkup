@@ -29,7 +29,7 @@ export default async function CatalogPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  await requireOperator("/admin/catalogo");
+  const { role } = await requireOperator("/admin/catalogo");
   ensureCatalog();
   const query = await searchParams;
   const page = Math.max(
@@ -52,7 +52,7 @@ export default async function CatalogPage({
   }[];
   const review = query.envio ? `&envio=${encodeURIComponent(query.envio)}` : "";
   return (
-    <WorkspaceShell nav={<AdminNav />}>
+    <WorkspaceShell nav={<AdminNav canManagePeople={role === "admin"} />}>
       <div className="grid gap-8">
         <PageHeader
           eyebrow="Operación"

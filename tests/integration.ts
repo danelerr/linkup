@@ -825,6 +825,122 @@ try {
   check(
     "an operator can reset a password without email and the person can change it",
   );
+  const member = (method: string, body: unknown, as = cookie) =>
+    api("/api/organization/members", method, body, as);
+  const operatorAccount = db
+    .prepare("SELECT id FROM auth_user WHERE email='operator@example.test'")
+    .get() as { id: string };
+  const talentAccount = db
+    .prepare("SELECT id FROM auth_user WHERE email='talent@example.test'")
+    .get() as { id: string };
+  const team = { organizationSlug: "estudio" };
+  assert.equal(
+    (
+      await member("POST", {
+        ...team,
+        email: "operator@example.test",
+        memberRole: "recruiter",
+      })
+    ).response.status,
+    201,
+  );
+  assert.equal(
+    (
+      await member("POST", {
+        ...team,
+        email: "operator@example.test",
+        memberRole: "viewer",
+      })
+    ).response.status,
+    200,
+  );
+  assert.equal(
+    (
+      await member("POST", {
+        ...team,
+        email: "talent@example.test",
+        memberRole: "viewer",
+      })
+    ).response.status,
+    409,
+  );
+  assert.equal(
+    (
+      await member("POST", {
+        ...team,
+        email: "nadie@example.test",
+        memberRole: "viewer",
+      })
+    ).response.status,
+    404,
+  );
+  assert.equal(
+    (await member("DELETE", { ...team, userId: operatorAccount.id })).response
+      .status,
+    200,
+  );
+  assert.equal(
+    (await member("DELETE", { ...team, userId: operatorAccount.id })).response
+      .status,
+    404,
+  );
+  assert.equal(
+    (await member("DELETE", { ...team, userId: talentAccount.id })).response
+      .status,
+    409,
+  );
+  assert.equal(
+    (
+      await member(
+        "POST",
+        { ...team, email: "operator@example.test", memberRole: "viewer" },
+        "",
+      )
+    ).response.status,
+    401,
+  );
+  check("startup owners manage their team and a startup always keeps an owner");
+  const assignRole = (email: string, value: string, as: string) =>
+    api("/api/admin/roles", "PATCH", { email, role: value }, as);
+  // Denied pages render the not-found view; with the root loading.tsx the
+  // response may already be streaming, so check content rather than status.
+  const pageText = async (path: string, as: string) =>
+    (await fetch(origin + path, { headers: { cookie: as } })).text();
+  assert.equal(
+    (await assignRole("operator@example.test", "talent", cookie)).response
+      .status,
+    403,
+  );
+  assert.equal(
+    (await assignRole("talent@example.test", "curator", adminCookie)).response
+      .status,
+    200,
+  );
+  assert.ok(
+    (await pageText("/admin", cookie)).includes("Todo cambio queda asociado"),
+  );
+  assert.ok(
+    !(await pageText("/admin/personas", cookie)).includes("Asignar rol"),
+  );
+  assert.ok(
+    (await pageText("/admin/personas", adminCookie)).includes("Asignar rol"),
+  );
+  assert.equal(
+    (await assignRole("operator@example.test", "talent", adminCookie)).response
+      .status,
+    409,
+  );
+  assert.equal(
+    (await assignRole("talent@example.test", "talent", adminCookie)).response
+      .status,
+    200,
+  );
+  assert.ok(
+    !(await pageText("/admin", cookie)).includes("Todo cambio queda asociado"),
+  );
+  check(
+    "only administrators assign roles, never their own, and curators cannot manage people",
+  );
   assert.equal(
     (await api("/api/account/export", "GET", undefined, cookie)).response
       .status,

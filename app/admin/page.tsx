@@ -57,7 +57,7 @@ export default async function AdminPage() {
     { value: metrics.progressed, label: "avances reportados" },
   ];
   return (
-    <WorkspaceShell nav={<AdminNav />}>
+    <WorkspaceShell nav={<AdminNav canManagePeople={role === "admin"} />}>
       <div className="grid gap-10">
         <PageHeader
           eyebrow={`Operación · ${userRoleLabels[role] ?? role}`}

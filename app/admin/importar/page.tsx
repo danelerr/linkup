@@ -11,9 +11,9 @@ export const metadata = {
 };
 
 export default async function ImportPage() {
-  await requireOperator("/admin/importar");
+  const { role } = await requireOperator("/admin/importar");
   return (
-    <WorkspaceShell nav={<AdminNav />}>
+    <WorkspaceShell nav={<AdminNav canManagePeople={role === "admin"} />}>
       <div className="grid gap-12">
         <PageHeader
           eyebrow="Operación"

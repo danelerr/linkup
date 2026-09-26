@@ -937,3 +937,195 @@ async function recordAudit(
       detailJson: JSON.stringify(detail),
     });
 }
+
+export type UserRole = "talent" | "curator" | "admin";
+export type MemberRole = "owner" | "recruiter" | "viewer";
+
+/**
+ * Finds a LinkUp account by email and makes sure it has a users row, so a
+ * role or membership can be given to someone who signed up but never synced.
+ */
+export async function findAccountByEmail(email: string) {
+  await ensureDatabase();
+  const account = getSqlite()
+    .prepare("SELECT id, name, email FROM auth_user WHERE lower(email) = ?")
+    .get(email.trim().toLowerCase()) as
+    { id: string; name: string; email: string } | undefined;
+  if (!account) return null;
+  await syncUser({
+    userId: account.id,
+    displayName: account.name,
+    email: account.email,
+    fullName: account.name,
+  });
+  return account;
+}
+
+export async function listOperators() {
+  await ensureDatabase();
+  return getDb()
+    .select({
+      userId: users.id,
+      displayName: users.displayName,
+      email: users.email,
+      role: users.role,
+    })
+    .from(users)
+    .where(inArray(users.role, ["admin", "curator"]))
+    .orderBy(users.role, users.displayName);
+}
+
+export async function setUserRole(
+  actorId: string,
+  userId: string,
+  role: UserRole,
+) {
+  await ensureDatabase();
+  const now = new Date().toISOString();
+  getDb().transaction((tx) => {
+    tx.update(users)
+      .set({ role, updatedAt: now })
+      .where(eq(users.id, userId))
+      .run();
+    tx.insert(auditEvents)
+      .values({
+        id: crypto.randomUUID(),
+        actorId,
+        action: "user.role_changed",
+        entityType: "user",
+        entityId: userId,
+        detailJson: JSON.stringify({ role }),
+        createdAt: now,
+      })
+      .run();
+  });
+}
+
+function activeOwnerCount(
+  tx: Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0],
+  organizationSlug: string,
+) {
+  return (
+    tx
+      .select({ value: count() })
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.organizationSlug, organizationSlug),
+          eq(organizationMembers.memberRole, "owner"),
+          eq(organizationMembers.status, "active"),
+        ),
+      )
+      .get()?.value ?? 0
+  );
+}
+
+/** Adds someone to a startup's team or changes their role. */
+export async function saveOrganizationMember(
+  actorId: string,
+  organizationSlug: string,
+  userId: string,
+  memberRole: MemberRole,
+) {
+  await ensureDatabase();
+  const now = new Date().toISOString();
+  return getDb().transaction((tx) => {
+    const current = tx
+      .select()
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.organizationSlug, organizationSlug),
+          eq(organizationMembers.userId, userId),
+          eq(organizationMembers.status, "active"),
+        ),
+      )
+      .get();
+    // A startup always keeps someone who can manage it.
+    if (
+      current?.memberRole === "owner" &&
+      memberRole !== "owner" &&
+      activeOwnerCount(tx, organizationSlug) <= 1
+    )
+      return "last_owner" as const;
+    tx.insert(organizationMembers)
+      .values({
+        organizationSlug,
+        userId,
+        memberRole,
+        status: "active",
+        approvedBy: actorId,
+        createdAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [
+          organizationMembers.organizationSlug,
+          organizationMembers.userId,
+        ],
+        set: { memberRole, status: "active", approvedBy: actorId },
+      })
+      .run();
+    tx.insert(auditEvents)
+      .values({
+        id: crypto.randomUUID(),
+        actorId,
+        action: current
+          ? "organization.member_role_changed"
+          : "organization.member_added",
+        entityType: "organization",
+        entityId: organizationSlug,
+        detailJson: JSON.stringify({ userId, memberRole }),
+        createdAt: now,
+      })
+      .run();
+    return current ? ("updated" as const) : ("added" as const);
+  });
+}
+
+export async function removeOrganizationMember(
+  actorId: string,
+  organizationSlug: string,
+  userId: string,
+) {
+  await ensureDatabase();
+  const now = new Date().toISOString();
+  return getDb().transaction((tx) => {
+    const current = tx
+      .select()
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.organizationSlug, organizationSlug),
+          eq(organizationMembers.userId, userId),
+        ),
+      )
+      .get();
+    if (!current) return "not_found" as const;
+    if (
+      current.memberRole === "owner" &&
+      current.status === "active" &&
+      activeOwnerCount(tx, organizationSlug) <= 1
+    )
+      return "last_owner" as const;
+    tx.delete(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.organizationSlug, organizationSlug),
+          eq(organizationMembers.userId, userId),
+        ),
+      )
+      .run();
+    tx.insert(auditEvents)
+      .values({
+        id: crypto.randomUUID(),
+        actorId,
+        action: "organization.member_removed",
+        entityType: "organization",
+        entityId: organizationSlug,
+        detailJson: JSON.stringify({ userId, memberRole: current.memberRole }),
+        createdAt: now,
+      })
+      .run();
+    return "removed" as const;
+  });
+}

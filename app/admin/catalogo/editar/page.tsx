@@ -21,7 +21,7 @@ export default async function EditorPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  await requireOperator("/admin/catalogo");
+  const { role } = await requireOperator("/admin/catalogo");
   const query = await searchParams;
   const kind = query.tipo === "opportunity" ? "opportunity" : "startup";
   const existing = query.slug
@@ -89,7 +89,7 @@ export default async function EditorPage({
             }),
       };
   return (
-    <WorkspaceShell nav={<AdminNav />}>
+    <WorkspaceShell nav={<AdminNav canManagePeople={role === "admin"} />}>
       <div className="grid gap-8">
         <BackLink href="/admin/catalogo">Catálogo</BackLink>
         <PageHeader
