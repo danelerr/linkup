@@ -20,12 +20,12 @@ Según el orden definido en el `README.md`, una decisión aceptada aquí prevale
 
 | Fuente | Contenido útil | Límite |
 |---|---|---|
-| [Modelo Informe de proyecto (1).pdf](../Modelo%20Informe%20de%20proyecto%20%281%29.pdf) | Origen, problema social, primera propuesta, identidad y presentación para Horizontes Libres | Documento de concurso, no especificación de producto ni fuente jurídica confiable |
-| [Proyecto - LinkUp.docx](../Proyecto%20-%20LinkUp.docx) | Iteración en Dux Academy, encuesta, visuales, propuesta de portal y antecedentes | Encuesta pequeña y dirigida; alcance mezcla eventos, educación, empleo y networking |
-| [text1.md](../text1.md) | Requisitos iniciales de categorías, perfiles, vacantes y administración | Producto demasiado amplio y con patrones de portal convencional |
-| [texto2.md](../texto2.md) | Productos observados y referencias de mercado | Lista exploratoria, no análisis competitivo |
+| `Modelo Informe de proyecto (1).pdf` | Origen, problema social, primera propuesta, identidad y presentación para Horizontes Libres | Documento de concurso, no especificación de producto ni fuente jurídica confiable |
+| `Proyecto - LinkUp.docx` | Iteración en Dux Academy, encuesta, visuales, propuesta de portal y antecedentes | Encuesta pequeña y dirigida; alcance mezcla eventos, educación, empleo y networking |
+| `text1.md` | Requisitos iniciales de categorías, perfiles, vacantes y administración | Producto demasiado amplio y con patrones de portal convencional |
+| `texto2.md` | Productos observados y referencias de mercado | Lista exploratoria, no análisis competitivo |
 
-Estos archivos se conservaron intactos. Son evidencia histórica, no autoridad vigente.
+Estos archivos se conservaron intactos hasta el 25 de septiembre de 2026, cuando se retiraron del repositorio (commit `c71eab2`). Siguen en el historial de git (por ejemplo, `git show 2299452:text1.md`). Son evidencia histórica, no autoridad vigente.
 
 ### Conversaciones de definición
 

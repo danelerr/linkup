@@ -23,10 +23,11 @@ La página principal no es una landing de marketing. Es directamente una herrami
 - [Roadmap y plan de ejecución](docs/08-roadmap.md)
 - [Investigación, decisiones y asuntos abiertos](docs/09-research-decisions.md)
 - [Cobertura y control de la definición](docs/10-definition-completeness.md)
+- [Alternativas de infraestructura y costos](docs/11-infraestructura-y-costos.md)
 
 ## Fuentes históricas
 
-Los siguientes archivos se conservan sin modificaciones como antecedentes. No son la especificación vigente:
+Estos antecedentes se retiraron del repositorio el 25 de septiembre de 2026 (commit `c71eab2`) y siguen disponibles en el historial de git, por ejemplo con `git show 2299452:text1.md`. No son la especificación vigente:
 
 - `Modelo Informe de proyecto (1).pdf`: propuesta presentada en Horizontes Libres.
 - `Proyecto - LinkUp.docx`: propuesta presentada en Dux Academy.
