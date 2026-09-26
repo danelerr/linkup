@@ -536,6 +536,111 @@ try {
   check(
     "batch imports report duplicates and validation errors without auto-publication",
   );
+  const template = await fetch(
+    origin + "/api/admin/catalog-import?plantilla=vacantes",
+    { headers: { cookie: adminCookie } },
+  );
+  assert.equal(template.status, 200);
+  const templateBytes = Buffer.from(await template.arrayBuffer());
+  // UTF-8 BOM so Excel keeps accents; fetch's text() would strip it.
+  assert.deepEqual([...templateBytes.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
+  assert.ok(templateBytes.toString("utf8", 3).startsWith("startup,titulo,"));
+  const startupsImport = await api(
+    "/api/admin/catalog-import",
+    "POST",
+    {
+      kind: "startup",
+      rows: [
+        {
+          Nombre: "Importada Uno",
+          "Descripción corta": "Herramientas de cobro para ferias y mercados.",
+          Descripción:
+            "Permite a vendedores de mercados cobrar y llevar su caja.",
+          Industria: "Fintech",
+          "Sitio web": "https://importada.example.com",
+          Comprobado: "20/09/2026",
+        },
+        { Nombre: "Sin datos" },
+      ],
+    },
+    adminCookie,
+  );
+  assert.deepEqual(
+    startupsImport.data.results.map((item: { row: number; status: string }) => [
+      item.row,
+      item.status,
+    ]),
+    [
+      [2, "created"],
+      [3, "error"],
+    ],
+  );
+  assert.match(startupsImport.data.results[1].message, /descripcion_corta/);
+  const opportunitiesImport = await api(
+    "/api/admin/catalog-import",
+    "POST",
+    {
+      kind: "opportunity",
+      rows: [
+        {
+          startup: "importada uno",
+          titulo: "Pasantía de operaciones",
+          resumen: "Acompaña a vendedores en su primera semana con la app.",
+          descripcion: "Visitarás mercados con el equipo y documentarás dudas.",
+          tipo: "pasantia",
+          area: "Operaciones",
+          nivel: "Estudiante",
+          modalidad: "presencial",
+          dedicacion: "Medio tiempo",
+          compensacion: "Beca USD 250 / mes",
+          tipo_compensacion: "Beca",
+        },
+      ],
+    },
+    adminCookie,
+  );
+  assert.equal(opportunitiesImport.data.results[0].status, "created");
+  const draftRow = db
+    .prepare("SELECT status FROM catalog_opportunities WHERE slug=?")
+    .get(opportunitiesImport.data.results[0].slug) as { status: string };
+  assert.equal(draftRow.status, "draft");
+  assert.ok(
+    !(await (await fetch(origin + "/?q=Importada")).text()).includes(
+      "Pasantía de operaciones",
+    ),
+  );
+  const repeated = await api(
+    "/api/admin/catalog-import",
+    "POST",
+    {
+      kind: "startup",
+      rows: [
+        {
+          nombre: "Importada Uno",
+          descripcion_corta: "Herramientas de cobro para ferias y mercados.",
+          descripcion:
+            "Permite a vendedores de mercados cobrar y llevar su caja.",
+          industria: "Fintech",
+        },
+      ],
+    },
+    adminCookie,
+  );
+  assert.equal(repeated.data.results[0].status, "duplicate");
+  assert.equal(
+    (
+      await api(
+        "/api/admin/catalog-import",
+        "POST",
+        { kind: "startup", rows: [{ nombre: "X" }] },
+        cookie,
+      )
+    ).response.status,
+    403,
+  );
+  check(
+    "complete spreadsheet imports create drafts, explain row errors in Spanish and skip duplicates",
+  );
   assert.equal(
     (await api("/api/submissions", "POST", { ...external, kind: "claim" }))
       .response.status,

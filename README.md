@@ -110,7 +110,9 @@ Las fechas originales se conservan: una oportunidad demostrativa vencida no apar
 4. Los envíos de `/agregar` (requieren cuenta; hasta 5 por día y cuenta) y las importaciones CSV/JSON de `/admin/importar` llegan a `/admin`. Se publican desde el editor, después de revisar la fuente. Aprobar y publicar son una sola transacción.
 5. Una corrección se aplica al registro existente. Reclamar una startup requiere cuenta y aprobación explícita de una persona administradora; tener un correo no acredita representación.
 
-La importación admite hasta 100 filas / 1 MB. Columnas: `kind` (startup u opportunity), `organizationName`, `sourceUrl`; las oportunidades también necesitan `opportunityTitle`. Opcionales: `websiteUrl`, `notes`, `contactEmail`. Hay vista previa y resultados por fila. No hay scraping ni publicación automática. Los slugs, sitios y fuentes canónicas previenen duplicados; una edición desactualizada se rechaza para no pisar cambios ajenos.
+Para cargar datos reales, `/admin/importar` → **Fichas completas** ofrece plantillas CSV de startups y de vacantes (títulos de columna en español, sin importar tildes ni mayúsculas; fechas `25/09/2026` o `2026-09-25`; separador `,` o `;`). Sube primero la hoja de startups y después la de vacantes: cada vacante se une a su startup por nombre. Todo se crea como borrador con errores explicados por fila, y se publica desde el editor tras revisar la fuente.
+
+La lista de propuestas admite hasta 100 filas / 1 MB. Columnas: `kind` (startup u opportunity), `organizationName`, `sourceUrl`; las oportunidades también necesitan `opportunityTitle`. Opcionales: `websiteUrl`, `notes`, `contactEmail`. Hay vista previa y resultados por fila. No hay scraping ni publicación automática. Los slugs, sitios y fuentes canónicas previenen duplicados; una edición desactualizada se rechaza para no pisar cambios ajenos.
 
 ### Alcance que funciona y límites
 

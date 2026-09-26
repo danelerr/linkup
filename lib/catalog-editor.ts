@@ -125,6 +125,84 @@ export const catalogEditSchema = z.object({
   submissionId: z.string().uuid().optional(),
   reason: z.string().trim().min(3).max(300),
 });
+/** Spanish names of the editor fields, for validation messages. */
+export const fieldLabels: Record<string, string> = {
+  slug: "Enlace permanente",
+  name: "Nombre",
+  monogram: "Iniciales",
+  shortDescription: "Descripción en una línea",
+  description: "Descripción",
+  industry: "Industria",
+  stage: "Etapa",
+  teamSize: "Tamaño del equipo",
+  foundedYear: "Año de fundación",
+  city: "Ubicación",
+  remotePolicy: "Política de trabajo",
+  websiteUrl: "Sitio web",
+  logoUrl: "Logo",
+  sourceUrl: "Fuente oficial",
+  sourceLabel: "Nombre de la fuente",
+  verifiedAt: "Fecha de comprobación",
+  status: "Estado",
+  organizationSlug: "Startup",
+  title: "Título",
+  summary: "Resumen",
+  type: "Tipo",
+  area: "Área",
+  level: "Nivel de experiencia",
+  modality: "Modalidad",
+  location: "Ubicación",
+  countriesAccepted: "Desde dónde se puede postular",
+  dedication: "Dedicación",
+  compensation: "Compensación",
+  compensationType: "Tipo de compensación",
+  closesAt: "Fecha de cierre",
+  applicationMode: "Postulación",
+  applicationUrl: "Enlace para postular",
+  responsibilities: "Responsabilidades",
+  requirements: "Lo indispensable",
+  desirable: "Suma, pero no es requisito",
+};
+
+/** Turns zod issues into short Spanish reasons, one per field. */
+export function describeIssues(
+  issues: z.core.$ZodIssue[],
+  label: (key: string) => string = (key) => fieldLabels[key] ?? key,
+) {
+  return [
+    ...new Set(
+      issues.map((issue) => {
+        const key = String(issue.path[0] ?? "");
+        const reason =
+          issue.code === "too_small"
+            ? issue.origin === "number"
+              ? `debe ser al menos ${issue.minimum}`
+              : Number(issue.minimum) <= 1
+                ? "falta"
+                : `falta o es muy corto (mínimo ${issue.minimum} caracteres)`
+            : issue.code === "too_big"
+              ? issue.origin === "number"
+                ? `debe ser como máximo ${issue.maximum}`
+                : `es muy largo (máximo ${issue.maximum})`
+              : issue.code === "invalid_value"
+                ? `usa uno de estos valores: ${issue.values.join(", ")}`
+                : issue.code === "invalid_format"
+                  ? issue.format === "date"
+                    ? "usa una fecha AAAA-MM-DD"
+                    : issue.format === "url"
+                      ? "usa un enlace que empiece con https://"
+                      : "tiene un formato inválido"
+                  : issue.code === "invalid_union"
+                    ? "usa un enlace que empiece con https://"
+                    : issue.code === "invalid_type"
+                      ? "falta o tiene un tipo inválido"
+                      : issue.message;
+        return key ? `${label(key)}: ${reason}` : reason;
+      }),
+    ),
+  ];
+}
+
 export class CatalogError extends Error {
   constructor(
     message: string,
@@ -142,11 +220,7 @@ export function saveCatalogEntry(
     input.kind === "startup" ? organizationSchema : opportunitySchema
   ).safeParse(input.data);
   if (!parsed.success)
-    throw new CatalogError(
-      parsed.error.issues
-        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-        .join(" · "),
-    );
+    throw new CatalogError(describeIssues(parsed.error.issues).join(" · "));
   const value = parsed.data;
   if (input.existingSlug && input.existingSlug !== value.slug)
     throw new CatalogError("El enlace de un registro existente no se cambia.");
