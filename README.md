@@ -109,6 +109,7 @@ Las fechas originales se conservan: una oportunidad demostrativa vencida no apar
 3. Abre `/admin/catalogo`: agrega startups y oportunidades, edita condiciones, guarda borradores o cierra registros.
 4. Los envíos de `/agregar` (requieren cuenta; hasta 5 por día y cuenta) y las importaciones CSV/JSON de `/admin/importar` llegan a `/admin`. Se publican desde el editor, después de revisar la fuente. Aprobar y publicar son una sola transacción.
 5. Una corrección se aplica al registro existente. Reclamar una startup requiere cuenta y aprobación explícita de una persona administradora; tener un correo no acredita representación.
+6. Roles: la primera administración se concede por terminal (paso 2). Después, en `/admin/personas` una persona administradora nombra curaduría (revisa envíos y edita el catálogo) u otra administración; nadie cambia su propio rol. Cada startup gestiona su equipo en `/organizacion/<startup>/equipo`: su responsable suma cuentas existentes como responsable, selección de personas (ve y actualiza candidatos) o solo lectura, y siempre queda al menos una persona responsable.
 
 Para cargar datos reales, `/admin/importar` → **Fichas completas** ofrece plantillas CSV de startups y de vacantes (títulos de columna en español, sin importar tildes ni mayúsculas; fechas `25/09/2026` o `2026-09-25`; separador `,` o `;`). Sube primero la hoja de startups y después la de vacantes: cada vacante se une a su startup por nombre. Todo se crea como borrador con errores explicados por fila, y se publica desde el editor tras revisar la fuente.
 
