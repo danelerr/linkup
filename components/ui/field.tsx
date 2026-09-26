@@ -6,7 +6,8 @@ export const controlClass =
 
 export const textareaClass = cx(controlClass, "min-h-28 resize-y py-2.5");
 
-export const selectClass = cx(controlClass, "select-chevron");
+// pr-9 keeps room for the chevron; controlClass's px-3 would override it.
+export const selectClass = cx(controlClass, "select-chevron pr-9");
 
 export const checkClass = "size-[18px] shrink-0 accent-action";
 

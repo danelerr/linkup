@@ -1,7 +1,12 @@
+"use client";
+import { useState } from "react";
 import Image from "next/image";
 import { cx } from "@/lib/cx";
 
-/** Startup logo in a neutral container; monogram when there is no logo. */
+/**
+ * Startup logo in a neutral container. Falls back to the monogram when there
+ * is no logo or the image fails to load (external logos move or disappear).
+ */
 export function StartupLogo({
   monogram,
   logoUrl,
@@ -13,6 +18,8 @@ export function StartupLogo({
   size?: number;
   className?: string;
 }) {
+  const [failedUrl, setFailedUrl] = useState("");
+  const showImage = Boolean(logoUrl) && failedUrl !== logoUrl;
   return (
     <span
       className={cx(
@@ -23,14 +30,15 @@ export function StartupLogo({
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      {logoUrl ? (
+      {showImage ? (
         <Image
-          src={logoUrl}
+          src={logoUrl!}
           alt=""
           width={size}
           height={size}
           unoptimized
           referrerPolicy="no-referrer"
+          onError={() => setFailedUrl(logoUrl ?? "")}
           className="size-full object-contain p-[12%]"
         />
       ) : (

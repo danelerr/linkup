@@ -15,7 +15,9 @@ test("spreadsheet headers match without accents, case or spaces", () => {
   assert.equal(detectKind(["Nombre", "Industria"]), "startup");
   assert.equal(detectKind(["Startup", "Título", "Resumen"]), "opportunity");
   assert.equal(detectKind(["columna"]), null);
-  assert.ok(templateCsv("startup").startsWith("\uFEFFnombre,descripcion_corta"));
+  assert.ok(
+    templateCsv("startup").startsWith("\uFEFFnombre,descripcion_corta"),
+  );
 });
 
 test("a startup row becomes a draft with generated link, initials and ISO date", () => {
