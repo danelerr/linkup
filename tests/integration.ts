@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,6 +7,7 @@ import { createServer } from "node:net";
 import Database from "better-sqlite3";
 import { startup, opportunity } from "./fixtures";
 
+const secret = crypto.randomUUID() + crypto.randomUUID();
 const temporary = mkdtempSync(join(tmpdir(), "linkup-integration-"));
 const database = join(temporary, "test.sqlite");
 const portProbe = createServer();
@@ -33,7 +34,7 @@ const server = spawn(
       LINKUP_DATABASE_PATH: database,
       LINKUP_SEED_DEMO: "false",
       BETTER_AUTH_URL: origin,
-      BETTER_AUTH_SECRET: crypto.randomUUID() + crypto.randomUUID(),
+      BETTER_AUTH_SECRET: secret,
     },
     stdio: ["ignore", "pipe", "pipe"],
   },
@@ -253,7 +254,7 @@ try {
     name: "Test Talent",
   });
   assert.equal(registeredTalent.response.status, 200);
-  const cookie = registeredTalent.response.headers
+  let cookie = registeredTalent.response.headers
     .getSetCookie()
     .map((value) => value.split(";")[0])
     .join("; ");
@@ -659,6 +660,65 @@ try {
   assert.equal((await review("oferta")).response.status, 409);
   check(
     "organizations keep reviewing candidates after closing and cannot reopen withdrawn processes",
+  );
+  const resetOutput = execFileSync(
+    join("node_modules", ".bin", "tsx"),
+    ["scripts/password.ts", "--email", "talent@example.test"],
+    {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        LINKUP_DATABASE_PATH: database,
+        BETTER_AUTH_URL: origin,
+        BETTER_AUTH_SECRET: secret,
+      },
+    },
+  );
+  const temporaryPassword = resetOutput.match(
+    /Contraseña temporal: (\S+)/,
+  )?.[1];
+  assert(temporaryPassword, resetOutput);
+  assert.equal(
+    (await api("/api/profile", "GET", undefined, cookie)).response.status,
+    401,
+  );
+  const temporaryLogin = await api("/api/auth/sign-in/email", "POST", {
+    email: "talent@example.test",
+    password: temporaryPassword,
+  });
+  assert.equal(temporaryLogin.response.status, 200);
+  const temporaryCookie = temporaryLogin.response.headers
+    .getSetCookie()
+    .map((value) => value.split(";")[0])
+    .join("; ");
+  const changed = await api(
+    "/api/auth/change-password",
+    "POST",
+    {
+      currentPassword: temporaryPassword,
+      newPassword: "Nueva-frase-de-prueba-2026",
+      revokeOtherSessions: true,
+    },
+    temporaryCookie,
+  );
+  assert.equal(changed.response.status, 200, JSON.stringify(changed.data));
+  // Changing the password closes the other sessions and opens a new one.
+  // (Signing in again here would trip Better Auth's sign-in rate limit.)
+  cookie = changed.response.headers
+    .getSetCookie()
+    .map((value) => value.split(";")[0])
+    .join("; ");
+  assert.equal(
+    (await api("/api/profile", "GET", undefined, cookie)).response.status,
+    200,
+  );
+  assert.equal(
+    (await api("/api/profile", "GET", undefined, temporaryCookie)).response
+      .status,
+    401,
+  );
+  check(
+    "an operator can reset a password without email and the person can change it",
   );
   assert.equal(
     (await api("/api/account/export", "GET", undefined, cookie)).response

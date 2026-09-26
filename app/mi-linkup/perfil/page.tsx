@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ProfileForm } from "@/components/profile-form";
 import { AccountDataActions } from "@/components/account-data-actions";
+import { ChangePasswordForm } from "@/components/change-password-form";
 import { PageHeader } from "@/components/ui/layout";
 import { requireSyncedUser } from "@/lib/current-user";
 import { getProfile } from "@/lib/user-data";
@@ -30,6 +31,7 @@ export default async function ProfilePage({
         description="Completa solo lo necesario para encontrar y explicar un buen encaje."
       />
       <ProfileForm initialProfile={profile} returnTo={returnTo} />
+      <ChangePasswordForm />
       <AccountDataActions />
     </div>
   );

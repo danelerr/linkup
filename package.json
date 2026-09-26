@@ -12,6 +12,7 @@
     "test": "tsx --test tests/*.test.ts",
     "test:integration": "tsx tests/integration.ts",
     "admin": "tsx scripts/admin.ts",
+    "password": "tsx scripts/password.ts",
     "alerts": "tsx scripts/alerts.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"

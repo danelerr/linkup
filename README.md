@@ -104,6 +104,8 @@ Las fechas originales se conservan: una oportunidad demostrativa vencida no apar
 
 1. Crea una cuenta en `/ingresar`.
 2. Concede administración localmente a esa cuenta: `npm run admin -- --email tu@correo.com`. No hay autoasignación por email ni contraseña de administrador predefinida.
+
+   Si alguien olvida su contraseña (todavía no hay correo para recuperarla): `npm run password -- --email persona@correo.com` genera una contraseña temporal, cierra sus sesiones y deja registro. Compártela por un canal privado; la persona la cambia en Mi LinkUp → Perfil.
 3. Abre `/admin/catalogo`: agrega startups y oportunidades, edita condiciones, guarda borradores o cierra registros.
 4. Los envíos de `/agregar` (requieren cuenta; hasta 5 por día y cuenta) y las importaciones CSV/JSON de `/admin/importar` llegan a `/admin`. Se publican desde el editor, después de revisar la fuente. Aprobar y publicar son una sola transacción.
 5. Una corrección se aplica al registro existente. Reclamar una startup requiere cuenta y aprobación explícita de una persona administradora; tener un correo no acredita representación.
