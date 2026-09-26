@@ -15,10 +15,12 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ return_to?: string }>;
+  searchParams: Promise<{ return_to?: string; cuenta?: string }>;
 }) {
   const params = await searchParams;
   const returnTo = safeRelativeReturnPath(params.return_to || "/mi-linkup");
+  // Actions that need an account send people here with ?cuenta=nueva.
+  const newAccount = params.cuenta === "nueva";
   if (await getCurrentUser()) redirect(returnTo);
   return (
     <main
@@ -29,12 +31,19 @@ export default async function SignInPage({
       <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12">
         <p className={eyebrowClass}>Tu espacio privado</p>
         <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.04em]">
-          Continúa donde lo dejaste.
+          {newAccount
+            ? "Crea tu cuenta para continuar."
+            : "Continúa donde lo dejaste."}
         </h1>
         <p className="mt-2.5 text-[15px] leading-6 text-body">
-          Guarda oportunidades, crea alertas y sigue tus postulaciones.
+          {newAccount
+            ? "Es gratis. Con tu cuenta guardas oportunidades, creas alertas y sigues tus postulaciones. Si ya tienes una, elige Ingresar."
+            : "Guarda oportunidades, crea alertas y sigue tus postulaciones."}
         </p>
-        <AuthForm returnTo={returnTo} />
+        <AuthForm
+          returnTo={returnTo}
+          initialMode={newAccount ? "signup" : "signin"}
+        />
         <Link
           className="mt-6 self-center text-sm font-medium text-muted transition-colors hover:text-action"
           href="/"

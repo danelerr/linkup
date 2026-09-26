@@ -1,4 +1,5 @@
 import { getOpportunities, getOrganizations } from "@/lib/catalog";
+import { siteOrigin } from "@/lib/site";
 
 function escapeXml(value: string) {
   return value.replace(
@@ -15,7 +16,7 @@ function escapeXml(value: string) {
 }
 
 export function GET(request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = siteOrigin(new URL(request.url).origin);
   const organizations = getOrganizations();
   const visible = new Set(organizations.map((item) => item.slug));
   const paths = [

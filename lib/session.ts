@@ -27,6 +27,6 @@ export async function getCurrentUser(): Promise<LinkUpUser | null> {
 
 export async function requireCurrentUser(returnTo: string) {
   const user = await getCurrentUser();
-  if (!user) redirect(signInPath(returnTo));
+  if (!user) redirect(signInPath(returnTo, true));
   return user;
 }

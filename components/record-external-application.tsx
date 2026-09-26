@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { textLinkClass } from "@/components/ui/button";
 import { cx } from "@/lib/cx";
+import { signInPath } from "@/lib/navigation";
 
 export function RecordExternalApplication({
   opportunitySlug,
@@ -97,10 +98,7 @@ export function RecordExternalApplication({
     return (
       <p className={wrapper}>
         <span className="text-muted">¿Ya postulaste? </span>
-        <Link
-          className={textLinkClass}
-          href={`/ingresar?return_to=${encodeURIComponent(returnTo)}`}
-        >
+        <Link className={textLinkClass} href={signInPath(returnTo, true)}>
           Regístralo en tu LinkUp
         </Link>
       </p>

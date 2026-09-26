@@ -67,6 +67,15 @@ function safeStringArray(value: string) {
   }
 }
 
+const LAST_SEEN_RESOLUTION = 60 * 60 * 1000;
+
+/** SQLite's CURRENT_TIMESTAMP has no "T" or zone; both forms are UTC. */
+function parseTimestamp(value: string) {
+  return Date.parse(
+    value.includes("T") ? value : `${value.replace(" ", "T")}Z`,
+  );
+}
+
 export async function syncUser(user: LinkUpUser) {
   await ensureDatabase();
   const db = getDb();
@@ -75,6 +84,15 @@ export async function syncUser(user: LinkUpUser) {
     where: eq(users.id, user.userId),
   });
   const displayName = user.fullName ?? existingUser?.displayName ?? user.email;
+  // Most requests find nothing to change; skip the write unless the account
+  // changed or the last visit is older than the resolution we keep.
+  if (
+    existingUser &&
+    existingUser.email === user.email &&
+    existingUser.displayName === displayName &&
+    Date.now() - parseTimestamp(existingUser.lastSeenAt) < LAST_SEEN_RESOLUTION
+  )
+    return;
   await db
     .insert(users)
     .values({

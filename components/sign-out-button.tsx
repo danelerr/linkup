@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
 export function SignOutButton() {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (
@@ -18,7 +20,7 @@ export function SignOutButton() {
           try {
             const result = await authClient.signOut();
             if (result.error) throw new Error();
-            window.location.assign("/");
+            router.replace("/");
           } catch {
             setBusy(false);
             setError("No pudimos cerrar la sesión. Intenta de nuevo.");

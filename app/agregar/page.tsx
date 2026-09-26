@@ -68,7 +68,7 @@ export default async function AddPage({
             className="mt-10"
             title="Ingresa para proponer información."
             actions={
-              <Link className={buttonClass()} href={signInPath(returnTo)}>
+              <Link className={buttonClass()} href={signInPath(returnTo, true)}>
                 Ingresar o crear cuenta
               </Link>
             }

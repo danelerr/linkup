@@ -1,5 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { safeRelativeReturnPath } from "@/lib/navigation";
@@ -7,8 +8,15 @@ import { buttonClass } from "@/components/ui/button";
 import { controlClass, Field, FormError } from "@/components/ui/field";
 import { cx } from "@/lib/cx";
 
-export function AuthForm({ returnTo }: { returnTo: string }) {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+export function AuthForm({
+  returnTo,
+  initialMode = "signin",
+}: {
+  returnTo: string;
+  initialMode?: "signin" | "signup";
+}) {
+  const router = useRouter();
+  const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -18,6 +26,7 @@ export function AuthForm({ returnTo }: { returnTo: string }) {
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email")).trim().toLowerCase();
     const password = String(form.get("password"));
+    let navigating = false;
     try {
       const result =
         mode === "signup"
@@ -35,11 +44,15 @@ export function AuthForm({ returnTo }: { returnTo: string }) {
               ? "Revisa tu correo y contraseña."
               : "No pudimos crear la cuenta. Revisa los datos; si ya tienes cuenta, ingresa.",
         );
-      } else window.location.assign(safeRelativeReturnPath(returnTo));
+      } else {
+        navigating = true;
+        router.replace(safeRelativeReturnPath(returnTo));
+      }
     } catch {
       setError("No hay conexión. Tus datos siguen aquí; vuelve a intentar.");
     } finally {
-      setLoading(false);
+      // Keep the button busy while the next page loads.
+      if (!navigating) setLoading(false);
     }
   }
   return (

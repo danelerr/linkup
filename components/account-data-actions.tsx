@@ -3,11 +3,13 @@
 import { clientRequest } from "@/lib/client-request";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Download, LoaderCircle, Trash2 } from "lucide-react";
 import { buttonClass } from "@/components/ui/button";
 import { controlClass, Field, FormError } from "@/components/ui/field";
 
 export function AccountDataActions() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,8 +27,7 @@ export function AccountDataActions() {
       error?: string;
       signOutPath?: string;
     };
-    if (response.ok && payload.signOutPath)
-      window.location.assign(payload.signOutPath);
+    if (response.ok && payload.signOutPath) router.replace(payload.signOutPath);
     else {
       setError(payload.error ?? "No pudimos eliminar los datos.");
       setLoading(false);

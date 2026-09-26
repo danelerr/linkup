@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo_Narrow, Manrope } from "next/font/google";
 import { headers } from "next/headers";
+import { siteOrigin } from "@/lib/site";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -38,7 +39,7 @@ function requestOrigin(requestHeaders: Headers) {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const origin = requestOrigin(await headers());
+  const origin = siteOrigin(requestOrigin(await headers()));
   const description =
     "Descubre startups, entiende qué construyen y encuentra dónde puedes sumarte.";
   return {

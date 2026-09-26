@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StateIcon } from "@/components/state-icon";
 import { buttonClass } from "@/components/ui/button";
+import { signInPath } from "@/lib/navigation";
 
 export function SavedOpportunityButton({
   opportunitySlug,
@@ -66,7 +67,7 @@ export function SavedOpportunityButton({
     return (
       <Link
         className={classes}
-        href={`/ingresar?return_to=${encodeURIComponent(returnTo)}`}
+        href={signInPath(returnTo, true)}
         aria-label="Ingresa para guardar esta oportunidad"
       >
         <StateIcon state="bookmark" />

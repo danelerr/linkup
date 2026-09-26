@@ -14,6 +14,10 @@ export function safeRelativeReturnPath(value = "/") {
   }
 }
 
-export function signInPath(returnTo: string) {
-  return `/ingresar?return_to=${encodeURIComponent(safeRelativeReturnPath(returnTo))}`;
+/**
+ * Sign-in URL that comes back to `returnTo`. `newAccount` opens the form on
+ * "Crear cuenta": used when an action that needs an account sent someone here.
+ */
+export function signInPath(returnTo: string, newAccount = false) {
+  return `/ingresar?return_to=${encodeURIComponent(safeRelativeReturnPath(returnTo))}${newAccount ? "&cuenta=nueva" : ""}`;
 }

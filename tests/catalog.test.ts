@@ -258,3 +258,36 @@ test("startups someone can join come first, the summary ignores the search and s
     ["similar"],
   );
 });
+
+test("visits only write the account when something changed or an hour passed", async () => {
+  const { syncUser } = await import("../lib/user-data");
+  const db = getSqlite();
+  const person = {
+    userId: "sync-user",
+    displayName: "Ana",
+    email: "ana@example.test",
+    fullName: "Ana",
+  };
+  const row = () =>
+    db
+      .prepare("SELECT display_name, last_seen_at FROM users WHERE id=?")
+      .get(person.userId) as { display_name: string; last_seen_at: string };
+  await syncUser(person);
+  db.prepare("UPDATE users SET last_seen_at=? WHERE id=?").run(
+    new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    person.userId,
+  );
+  const recent = row().last_seen_at;
+  await syncUser(person);
+  assert.equal(row().last_seen_at, recent);
+  await syncUser({ ...person, fullName: "Ana María" });
+  assert.equal(row().display_name, "Ana María");
+  assert.notEqual(row().last_seen_at, recent);
+  // SQLite's CURRENT_TIMESTAMP format, two hours ago.
+  db.prepare(
+    "UPDATE users SET last_seen_at=datetime('now','-2 hours') WHERE id=?",
+  ).run(person.userId);
+  const stale = row().last_seen_at;
+  await syncUser({ ...person, fullName: "Ana María" });
+  assert.notEqual(row().last_seen_at, stale);
+});

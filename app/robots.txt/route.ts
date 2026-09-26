@@ -1,5 +1,7 @@
+import { siteOrigin } from "@/lib/site";
+
 export function GET(request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = siteOrigin(new URL(request.url).origin);
   const body = [
     "User-agent: *",
     "Allow: /",
