@@ -3,7 +3,7 @@ import { cx } from "@/lib/cx";
 
 /**
  * Progress of an application drawn with the Link line: it advances from blue
- * to mint and rises briefly where the process stands.
+ * to cyan and rises briefly where the process stands.
  */
 export function ApplicationProgress({
   status,
@@ -32,7 +32,7 @@ export function ApplicationProgress({
             "absolute top-1/2 left-0 h-0.5 -translate-y-1/2 rounded-full",
             stopped ? "bg-line-strong" : "link-gradient",
             !stopped &&
-              "after:absolute after:top-0 after:right-0 after:h-0.5 after:w-3 after:origin-left after:translate-x-full after:-rotate-[36deg] after:rounded-full after:bg-mint",
+              "after:absolute after:top-0 after:right-0 after:h-0.5 after:w-3 after:origin-left after:translate-x-full after:-rotate-[36deg] after:rounded-full after:bg-cyan",
           )}
           style={{ width: `max(${percent}%, 6px)` }}
         />

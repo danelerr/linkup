@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo_Narrow, Manrope } from "next/font/google";
+import { Lato, Raleway } from "next/font/google";
 import { headers } from "next/headers";
 import { siteOrigin } from "@/lib/site";
 import "./globals.css";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+// Brand typefaces: Lato for text and data, Raleway for headings and the brand.
+const lato = Lato({
+  variable: "--font-lato",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "700", "900"],
 });
 
-const archivoNarrow = Archivo_Narrow({
-  variable: "--font-archivo",
+const raleway = Raleway({
+  variable: "--font-raleway",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
 });
 
 function requestOrigin(requestHeaders: Headers) {
@@ -50,8 +50,12 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description,
     icons: {
-      icon: "/favicon.png",
+      icon: [
+        { url: "/marca/simbolo.svg", type: "image/svg+xml" },
+        { url: "/favicon.png", sizes: "64x64", type: "image/png" },
+      ],
       shortcut: "/favicon.png",
+      apple: "/apple-touch-icon.png",
     },
     openGraph: {
       type: "website",
@@ -81,7 +85,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#FBFCFD",
+  themeColor: "#F3F5F7",
   colorScheme: "light",
 };
 
@@ -91,7 +95,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${manrope.variable} ${archivoNarrow.variable}`}>
+    <html lang="es" className={`${lato.variable} ${raleway.variable}`}>
       <body>
         <a
           className="fixed top-3 left-3 z-50 -translate-y-20 rounded-control bg-ink px-4 py-2.5 text-sm font-semibold text-white transition-transform focus:translate-y-0"

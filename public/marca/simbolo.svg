@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="258 244 456 474" role="img" aria-label="LinkUp">
+  <defs>
+    <linearGradient id="u" gradientUnits="userSpaceOnUse" x1="410" y1="425" x2="665" y2="705">
+      <stop offset="0" stop-color="#16467A"/>
+      <stop offset="0.55" stop-color="#11909D"/>
+      <stop offset="1" stop-color="#169AA5"/>
+    </linearGradient>
+  </defs>
+  <path fill="#0F3151" d="M270 262a7 7 0 0 1 7-7h56a7 7 0 0 1 7 7v378h45l65 65H322a52 52 0 0 1-52-52z"/>
+  <path fill="none" stroke="url(#u)" stroke-width="68" d="M444 425v140a93 93 0 0 0 186 0V333"/>
+  <path fill="#11909D" d="M630 252l72 86H558z"/>
+</svg>

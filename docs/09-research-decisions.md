@@ -302,13 +302,20 @@ La frase `LinkedIn killer` se usa solo como ambición interna para discutir cate
 - **Límite:** mientras no exista verificación por correo (D-024), una cuenta no prueba la identidad ni el control del correo. La revisión humana sigue siendo obligatoria antes de publicar.
 - **Revisión:** al conectar un proveedor de correo, exigir correo verificado para proponer.
 
+### D-026 — Nueva identidad visual
+
+- **Estado:** Implementada localmente el 27 de septiembre de 2026.
+- **Decisión:** adoptar el tablero de marca entregado por el equipo: monograma `lU` con flecha ascendente, wordmark `LinkUp` con `Up` en celeste, lema `CONNECT.GROW.SUCCEED`, paleta Azul oscuro `#0F3151`, Celeste intenso `#11909D`, Cian `#47B9B2` y Celeste claro `#F3F5F7`, y tipografías Lato (texto) y Raleway (títulos y marca). Reemplaza la paleta azul-turquesa-menta y Manrope/Archivo Narrow.
+- **Ajuste de accesibilidad:** el Celeste intenso no alcanza 4,5:1 con texto blanco; botones y enlaces usan `#0D7680`, el mismo tono oscurecido. El Cian solo se usa sobre azul oscuro o como decoración (docs/03).
+- **Límite:** el símbolo de `public/marca/` es un redibujo fiel del tablero, no el archivo maestro de diseño. O-003 sigue abierto hasta recibir el vector original.
+
 ## Asuntos abiertos
 
 | ID | Asunto | Evidencia para decidir | Momento límite | Responsable por asignar |
 |---|---|---|---|---|
 | O-001 | Acuerdo, vesting, IP y autoridad de cofundadores | documento firmado | antes de inversión/contratación | founders |
 | O-002 | Disponibilidad de `LinkUp` | búsqueda legal, dominios y redes | antes de identidad final pública | legal/marca |
-| O-003 | Logo y colores oficiales | vector original y titularidad | antes de UI final | marca |
+| O-003 | Archivo maestro del logo | vector original y titularidad; colores ya definidos en D-026 | antes de identidad final pública | marca |
 | O-004 | Primera familia de roles | oferta comprometida + entrevistas | cierre Fase 0 | producto/partnerships |
 | O-005 | Organizaciones y cohorte del piloto | acuerdos con responsables y fechas | antes de Fase 2 completa | partnerships |
 | O-006 | Oferta pagada inicial | 15 entrevistas de precio + 3 pagos | durante piloto | comercial |

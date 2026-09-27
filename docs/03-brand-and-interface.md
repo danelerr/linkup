@@ -1,7 +1,7 @@
 # Marca y sistema de interfaz
 
-Versión: 1.0 para MVP  
-Estado de los colores: normalizados desde recursos rasterizados; deben compararse con el archivo vectorial original cuando esté disponible.
+Versión: 1.1 para MVP  
+Estado de la identidad: paleta, tipografías y logotipo tomados del tablero de marca de septiembre de 2026 (D-026). El símbolo en `public/marca/` es un redibujo fiel en vector; se reemplaza por el archivo maestro de diseño cuando exista (O-003).
 
 ## Encargo de diseño
 
@@ -53,17 +53,15 @@ Antes de registrar o invertir en una expansión regional se requiere búsqueda d
 ### Conservar
 
 - El símbolo que combina eslabón y flecha ascendente.
-- El recorrido cromático azul, turquesa y menta.
+- El recorrido cromático de azul hacia celeste y cian.
 - La asociación con crecimiento y conexión.
 - El tono de posibilidad y primera oportunidad.
 
-### Refinar
+### Refinado en la identidad 2026
 
-- Redibujar el símbolo en vector y corregir su comportamiento a tamaños pequeños.
-- Crear wordmark oficial `LinkUp` y lockups horizontal y vertical.
-- Definir degradado, zona de seguridad, tamaños mínimos y fondos permitidos.
-- Crear favicon simplificado donde la forma continúe siendo legible a 16 y 32 px.
-- Sustituir tipografías variables de los materiales por un sistema consistente.
+- El símbolo pasó a ser un monograma `lU`: la `l` en azul oscuro con base diagonal y la `U` que termina en una flecha ascendente.
+- Wordmark oficial `LinkUp`, con `Up` en celeste, y lema `CONNECT.GROW.SUCCEED`.
+- Paleta cerrada de cuatro colores y dos familias tipográficas (Lato y Raleway).
 
 ### Retirar de la interfaz
 
@@ -77,44 +75,49 @@ Esos recursos pueden permanecer en el archivo histórico de redes; no definen el
 
 ## Logotipo
 
-Se requieren cuatro archivos maestros:
+Archivos en `public/marca/`:
 
-1. Símbolo a color.
-2. Wordmark `LinkUp` con símbolo horizontal.
-3. Versión monocromática en tinta.
-4. Versión invertida blanca para fondos oscuros.
+| Archivo | Uso |
+|---|---|
+| `simbolo.svg` | Símbolo a color sobre fondos claros; también favicon vectorial |
+| `simbolo-blanco.svg` | Símbolo invertido para fondos azul oscuro |
+
+El lockup horizontal es el símbolo seguido del wordmark en Raleway 800: `Link` en azul oscuro y `Up` en celeste intenso; sobre azul oscuro, `Link` en blanco y `Up` en cian. Lo arma `components/brand.tsx` con texto real, para que sea nítido y accesible. Derivados rasterizados: `public/favicon.png` (64 px), `public/apple-touch-icon.png` (180 px sobre celeste claro) y `public/og.png` (1200 × 630 sobre azul oscuro).
 
 Reglas del MVP:
 
-- El degradado siempre avanza de azul hacia menta, en sentido ascendente.
+- El trazo de la `U` avanza de azul hacia celeste, en sentido ascendente; la flecha siempre apunta hacia arriba.
 - No rotar, deformar, recolorear por campaña ni aplicar sombra.
-- No colocar el logotipo a color sobre fotografías o colores de contraste impredecible.
-- En navegación se prefiere símbolo más wordmark; en favicon, solo símbolo simplificado.
+- No colocar el logotipo a color sobre fotografías o colores de contraste impredecible; sobre azul oscuro se usa la versión blanca.
+- En navegación se prefiere símbolo más wordmark; en favicon, solo el símbolo.
+- El lema `Connect · Grow · Succeed` acompaña al logotipo en el pie y en piezas de difusión, no en la navegación.
 - El símbolo no sustituye indiscriminadamente flechas, botones o viñetas.
 
 ## Paleta
 
-### Identidad y producto
+### Identidad
 
-| Token | Valor | Uso |
-|---|---:|---|
-| `logo-blue` | `#3675CF` | Inicio del degradado y acento identitario |
-| `action-blue` | `#2F6FC5` | Botón principal, enlace y foco sobre fondo claro |
-| `link-teal` | `#5AABBC` | Ilustración, selección suave y datos con texto oscuro |
-| `growth-mint` | `#7ED8B2` | Final del degradado, éxito suave y evidencia |
-| `ink` | `#111A20` | Texto, iconos y fondos oscuros |
-| `canvas` | `#FBFCFD` | Fondo principal |
+| Token | Valor | Nombre en la marca | Uso |
+|---|---:|---|---|
+| `navy` | `#0F3151` | Azul oscuro | Texto principal, títulos, pie y fondos oscuros |
+| `teal` | `#11909D` | Celeste intenso | `Up` del wordmark, acentos gráficos y anillos |
+| `cyan` | `#47B9B2` | Cian | Final de la línea Link y texto sobre azul oscuro |
+| `canvas` | `#F3F5F7` | Celeste claro | Fondo principal |
 
 ### Derivados funcionales
 
 ```css
---color-surface: #F2F6F7;
---color-line: #DBE4E7;
---color-muted: #5F6E75;
---color-focus: #2F6FC5;
---color-action-hover: #255DA8;
---color-action-active: #1D4A87;
---color-disabled-surface: #EDF2F3;
+--color-ink: #0F3151;            /* = navy */
+--color-action: #0D7680;         /* celeste intenso oscurecido: botón, enlace y foco */
+--color-action-hover: #0B6670;
+--color-action-active: #09545C;
+--color-paper: #FFFFFF;
+--color-surface: #E9EEF2;
+--color-line: #D6DEE4;
+--color-line-strong: #BCC8D0;
+--color-body: #3D5468;
+--color-muted: #5B6B7A;
+--color-on-navy-muted: #9FB3C4;
 --color-success: #147A56;
 --color-warning: #946200;
 --color-danger: #B42318;
@@ -122,56 +125,56 @@ Reglas del MVP:
 
 Reglas:
 
-- `action-blue` es el color de acción; `growth-mint` no lleva texto blanco.
-- El degradado se reserva al logotipo y al elemento firma.
+- `action` es el color de acción. El celeste intenso de la marca no alcanza 4,5:1 con texto blanco (3,82:1), así que la acción usa el mismo tono oscurecido hasta cumplir AA.
+- `teal` sobre fondo claro solo se usa en el wordmark, en texto grande o en elementos no textuales; `cyan` no lleva texto sobre fondos claros.
+- El degradado se reserva al símbolo y al elemento firma.
 - Los estados de error, advertencia y éxito conservan significados propios; no se decide solo por color.
-- El fondo habitual es blanco, con superficies suaves únicamente para agrupar controles o estados.
+- El fondo habitual es celeste claro, con papel blanco para agrupar contenido.
 - En modo oscuro futuro, no se invierten los colores automáticamente; se diseña una paleta separada.
 
-### Degradado canónico provisional
+### Degradado canónico
 
 ```css
-linear-gradient(115deg, #3675CF 0%, #5AABBC 52%, #7ED8B2 100%)
+linear-gradient(90deg, #0F3151 0%, #11909D 55%, #47B9B2 100%)
 ```
 
 No utilizar el degradado como fondo completo de página.
 
 ## Tipografía
 
-### Interfaz y contenido: Manrope
+Las dos familias de la marca se cargan con `next/font` desde Google Fonts, sin peticiones externas en tiempo de ejecución.
 
-Razón: una grotesca limpia con tensión suficiente para títulos editoriales y excelente lectura en controles y listados. Su construcción abierta mantiene cercanía sin dar a la interfaz un tono escolar.
+### Títulos y marca: Raleway
+
+Títulos de página, de sección y de detalle, además del wordmark y el lema. Sus capitales geométricas dan el carácter de la marca; se activan las cifras alineadas (`lnum`) porque las cifras por defecto de Raleway son de estilo antiguo.
+
+Pesos permitidos:
+
+- 600 para títulos.
+- 600 para el lema, en versalitas espaciadas.
+- 800 solo para el wordmark.
+
+### Texto, controles y datos: Lato
+
+Cuerpo, navegación, formularios, botones y metadatos factuales (fecha de publicación, última verificación, fuente, estado corto e identificadores internos). Es una humanista muy legible en tamaños pequeños, así que una sola familia basta para contenido y datos.
 
 Pesos permitidos:
 
 - 400 para texto.
-- 500 para controles y énfasis corto.
-- 600 para títulos.
-- 700 solo para cifras o momentos excepcionales.
-
-### Metadatos: Archivo Narrow
-
-Uso restringido a información factual:
-
-- Fecha de publicación.
-- Última verificación.
-- Fuente.
-- Estado corto.
-- Identificadores internos en administración.
-
-No se usa para párrafos, navegación ni llamadas a la acción. Evita que los datos adopten una estética de terminal o producto para desarrolladores.
+- 700 para controles, énfasis corto y cifras.
+- 900 solo para momentos excepcionales.
 
 ### Escala
 
-| Rol | Tamaño / interlineado | Peso |
-|---|---|---:|
-| Título de página | 34–46 / 38–51 px | 600 |
-| Título de detalle | 24 / 30 px | 600 |
-| Título de fila | 17 / 23 px | 600 |
-| Cuerpo | 16 / 24 px | 400 |
-| Control | 15 / 20 px | 500 |
-| Secundario | 14 / 20 px | 400 |
-| Metadata | 12 / 17 px | 500 condensed |
+| Rol | Tamaño / interlineado | Familia y peso |
+|---|---|---|
+| Título de página | 34–46 / 38–51 px | Raleway 600 |
+| Título de detalle | 24 / 30 px | Raleway 600 |
+| Título de fila | 17 / 23 px | Lato 700 |
+| Cuerpo | 16 / 24 px | Lato 400 |
+| Control | 15 / 20 px | Lato 700 |
+| Secundario | 14 / 20 px | Lato 400 |
+| Metadata | 12 / 17 px | Lato 700, versalitas espaciadas |
 
 En móvil, el título de página puede bajar a 28 px. El cuerpo no baja de 16 px en formularios.
 
@@ -203,7 +206,7 @@ No se crean valores arbitrarios salvo corrección óptica documentada.
 - Separadores: 1 px `line`.
 - Controles: 1 px; 2 px en foco visible.
 - No se usan sombras en filas, botones o paneles normales.
-- Popovers y diálogos pueden usar una sola sombra: `0 16px 40px rgba(23,33,38,.14)`.
+- Popovers y diálogos pueden usar una sola sombra: `0 16px 40px rgb(15 49 81 / .16)`.
 
 ## Layout
 
@@ -216,7 +219,7 @@ No se crean valores arbitrarios salvo corrección óptica documentada.
 
 ## Firma visual
 
-El único gesto expresivo del producto es la **línea Link**: una línea de 2 px que avanza de azul a menta y termina en una inclinación ascendente breve.
+El único gesto expresivo del producto es la **línea Link**: una línea de 2 px que avanza de azul oscuro a celeste y cian, y termina en una inclinación ascendente breve.
 
 Usos permitidos:
 
@@ -232,7 +235,7 @@ Usos prohibidos:
 - Dibujar redes decorativas de nodos.
 - Aparecer simultáneamente en más de un punto dominante de una pantalla.
 
-Este gesto deriva directamente del logotipo y evita que una interfaz blanca y tipográfica sea intercambiable con cualquier directorio.
+Este gesto deriva directamente de la `U` con flecha del logotipo y evita que una interfaz blanca y tipográfica sea intercambiable con cualquier directorio.
 
 ## Movimiento
 
@@ -287,11 +290,11 @@ Este gesto deriva directamente del logotipo y evita que una interfaz blanca y ti
 
 ### Botones y enlaces
 
-- Botón primario: fondo `action-blue`, texto blanco, mínimo 44 px de alto; hover `action-hover`, activo `action-active`.
+- Botón primario: fondo `action`, texto blanco, mínimo 44 px de alto; hover `action-hover`, activo `action-active`.
 - Botón secundario: fondo blanco, borde `line`, texto `ink`; hover usa `surface`.
 - Botón silencioso: sin contenedor permanente; aparece fondo `surface` en hover/foco.
 - Disabled: superficie `disabled-surface`, texto `muted`, cursor y semántica deshabilitados; no se comunica el estado solo por opacidad.
-- Enlaces dentro de texto: `action-blue`; se subrayan en hover y foco. Nunca se usa el degradado como color de texto.
+- Enlaces dentro de texto: `action`; se subrayan en hover y foco. Nunca se usa el degradado como color de texto.
 - Foco: anillo de 2 px `focus` con 2 px de separación respecto al control.
 
 ### Encabezado
@@ -431,19 +434,24 @@ Contraste base calculado con WCAG:
 
 | Par | Relación | Uso permitido |
 |---|---:|---|
-| `ink` sobre `canvas` | 17,14:1 | Todo texto |
-| `action-blue` sobre `canvas` | 4,87:1 | Enlaces y texto normal |
-| blanco sobre `action-blue` | 5,00:1 | Botón principal |
-| `logo-blue` sobre `canvas` | 4,44:1 | Marca, icono o texto grande; no cuerpo pequeño |
-| `muted` sobre `canvas` | 5,15:1 | Texto secundario normal |
-| `muted` sobre `surface` | 4,86:1 | Texto secundario sobre superficies |
-| `ink` sobre `link-teal` | 6,70:1 | Badges o superficies suaves |
-| `ink` sobre `growth-mint` | 10,36:1 | Badges o superficies suaves |
-| blanco sobre `success` | 5,63:1 | Estado sólido |
+| `ink` sobre `canvas` | 12,17:1 | Todo texto |
+| `ink` sobre `paper` | 13,30:1 | Todo texto |
+| `body` sobre `canvas` | 7,21:1 | Párrafos |
+| `action` sobre `canvas` | 4,90:1 | Enlaces y texto normal |
+| blanco sobre `action` | 5,36:1 | Botón principal |
+| `teal` sobre `canvas` | 3,49:1 | Wordmark, texto grande o elementos no textuales |
+| blanco sobre `teal` | 3,82:1 | No usar; por eso existe `action` |
+| `muted` sobre `canvas` | 5,02:1 | Texto secundario normal |
+| `muted` sobre `surface` | 4,69:1 | Texto secundario sobre superficies |
+| blanco sobre `navy` | 13,30:1 | Pie y piezas oscuras |
+| `cyan` sobre `navy` | 5,61:1 | Lema y `Up` invertido |
+| `on-navy-muted` sobre `navy` | 6,16:1 | Enlaces del pie |
+| `cyan` sobre `canvas` | 2,17:1 | Solo decorativo |
+| blanco sobre `success` | 5,32:1 | Estado sólido |
 | blanco sobre `warning` | 5,24:1 | Estado sólido |
 | blanco sobre `danger` | 6,57:1 | Estado sólido |
 
-No usar texto blanco sobre `link-teal` o `growth-mint`. Estos valores validan pares planos; hover, foco, disabled, transparencias, degradado y renderizado con la fuente real se vuelven a probar en componentes.
+No usar texto blanco sobre `teal` ni texto `cyan` sobre fondos claros. Estos valores validan pares planos; hover, foco, disabled, transparencias, degradado y renderizado con la fuente real se vuelven a probar en componentes.
 
 ## Revisión crítica de la dirección
 
@@ -452,17 +460,17 @@ Una primera interpretación de "minimalista y tecnológica" produciría fondo bl
 La dirección se corrigió con cuatro elecciones específicas de LinkUp:
 
 - Listados continuos en lugar de tarjetas.
-- Metadata factual en Archivo Narrow para separar datos y contenido sin introducir una estética de código.
-- Línea Link derivada del eslabón y la flecha como único gesto distintivo.
+- Títulos en Raleway y datos en Lato para separar voz de marca y contenido sin introducir una estética de código.
+- Línea Link derivada de la `U` con flecha como único gesto distintivo.
 - Gradiente restringido al símbolo y a esa línea, no utilizado como decoración.
 
 El riesgo deliberado es que la interfaz sea más silenciosa que otras plataformas juveniles. Se justifica porque la oferta y los logos de las startups ya aportan variedad; la marca debe ordenar y transmitir confianza.
 
 ## Entregables visuales pendientes antes del código final
 
-- Archivo SVG maestro del símbolo.
-- Wordmark y lockups.
-- Prueba de favicon a 16, 24 y 32 px.
+- Archivo SVG maestro del símbolo entregado por diseño, para reemplazar el redibujo actual.
+- Lockup vertical.
+- Prueba de favicon a 16, 24 y 32 px en navegadores reales.
 - Prueba visual de contraste en todos los estados y transparencias de componentes.
 - Pantalla principal desktop y móvil en alta fidelidad.
 - Detalle de startup y oportunidad.

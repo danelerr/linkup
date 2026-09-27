@@ -12,25 +12,26 @@
   --color-current: currentColor;
   --color-white: #ffffff;
 
-  /* Identidad */
-  --color-logo: #3675cf;
-  --color-action: #2f6fc5;
-  --color-action-hover: #255da8;
-  --color-action-active: #1d4a87;
-  --color-teal: #5aabbc;
-  --color-mint: #7ed8b2;
-  --color-ink: #111a20;
-  --color-canvas: #fbfcfd;
+  /* Identidad: paleta oficial de la marca. */
+  --color-navy: #0f3151; /* Azul oscuro */
+  --color-teal: #11909d; /* Celeste intenso */
+  --color-cyan: #47b9b2; /* Cian: solo sobre azul oscuro o decorativo */
+  --color-canvas: #f3f5f7; /* Celeste claro */
 
-  /* Derivados funcionales. `muted` es un poco más oscuro que el documento
-     para mantener 4.5:1 también sobre `surface`. */
+  /* Derivados funcionales. La acción es el celeste intenso oscurecido para
+     llegar a 4.5:1 con texto blanco y sobre el fondo (docs/03). */
+  --color-ink: #0f3151;
+  --color-action: #0d7680;
+  --color-action-hover: #0b6670;
+  --color-action-active: #09545c;
   --color-paper: #ffffff;
-  --color-surface: #f2f6f7;
-  --color-line: #dbe4e7;
-  --color-line-strong: #c3d1d5;
-  --color-body: #3f4f56;
-  --color-muted: #5f6e75;
-  --color-disabled: #edf2f3;
+  --color-surface: #e9eef2;
+  --color-line: #d6dee4;
+  --color-line-strong: #bcc8d0;
+  --color-body: #3d5468;
+  --color-muted: #5b6b7a;
+  --color-on-navy-muted: #9fb3c4;
+  --color-disabled: #e9eef2;
   --color-success: #147a56;
   --color-success-soft: #eefaf4;
   --color-warning: #946200;
@@ -40,8 +41,8 @@
 
   --radius-control: 10px;
   --radius-panel: 16px;
-  --shadow-popover: 0 16px 40px rgb(23 33 38 / 0.14);
-  --shadow-float: 0 8px 28px rgb(31 61 72 / 0.06);
+  --shadow-popover: 0 16px 40px rgb(15 49 81 / 0.16);
+  --shadow-float: 0 8px 28px rgb(15 49 81 / 0.07);
 
   --animate-link-sweep: link-sweep 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   @keyframes link-sweep {
@@ -54,10 +55,13 @@
   }
 }
 
-/* next/font define estas variables en <html>. */
+/* next/font define estas variables en <html>. Lato para texto y datos;
+   Raleway para títulos y la marca. */
 @theme inline {
-  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  --font-meta: var(--font-archivo), "Arial Narrow", ui-sans-serif, sans-serif;
+  --font-sans: var(--font-lato), ui-sans-serif, system-ui, sans-serif;
+  --font-meta: var(--font-lato), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-raleway), var(--font-lato), ui-sans-serif, sans-serif;
 }
 
 @layer base {
@@ -75,9 +79,14 @@
     min-width: 320px;
     min-height: 100dvh;
     background-color: var(--color-canvas);
-    font-feature-settings:
-      "ss01" 1,
-      "ss02" 1;
+  }
+
+  /* Raleway usa números de estilo antiguo por defecto; "lnum" los alinea. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-feature-settings: "lnum" 1;
   }
 
   :focus-visible {
@@ -86,7 +95,7 @@
   }
 
   ::selection {
-    background-color: rgb(90 171 188 / 0.25);
+    background-color: rgb(71 185 178 / 0.3);
   }
 
   button:not(:disabled),
@@ -100,7 +109,7 @@
   }
 
   dialog::backdrop {
-    background-color: rgb(17 26 32 / 0.36);
+    background-color: rgb(15 49 81 / 0.45);
   }
 }
 
@@ -108,9 +117,9 @@
 @utility link-gradient {
   background-image: linear-gradient(
     115deg,
-    var(--color-logo) 0%,
-    var(--color-teal) 52%,
-    var(--color-mint) 100%
+    var(--color-navy) 0%,
+    var(--color-teal) 55%,
+    var(--color-cyan) 100%
   );
 }
 
@@ -133,9 +142,9 @@
     border-radius: 2px;
     background-image: linear-gradient(
       180deg,
-      var(--color-logo) 0%,
+      var(--color-navy) 0%,
       var(--color-teal) 55%,
-      var(--color-mint) 100%
+      var(--color-cyan) 100%
     );
     pointer-events: none;
   }
@@ -167,7 +176,7 @@
     width: 15px;
     height: 2px;
     border-radius: 2px;
-    background-color: var(--color-mint);
+    background-color: var(--color-cyan);
     transform: rotate(-36deg);
     transform-origin: 1px 1px;
     pointer-events: none;
@@ -177,7 +186,7 @@
 @utility select-chevron {
   appearance: none;
   padding-right: 2.25rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235f6e75' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235b6b7a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-position: right 0.75rem center;
   background-repeat: no-repeat;
   background-size: 16px;

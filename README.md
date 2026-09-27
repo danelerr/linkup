@@ -51,7 +51,7 @@ Si una fuente histórica contradice esta documentación, prevalece esta document
 - No habrá feed social, conexiones, likes, cursos propios ni aplicación móvil en el MVP.
 - La IA enriquecerá datos y explicaciones; no rechazará candidatos ni será el diferenciador central.
 - La implementación actual usa Next.js estándar, React, TypeScript, Tailwind CSS, componentes propios, Morphicons, Better Auth y SQLite con Drizzle. No depende de Sites ni del acceso con ChatGPT. PostgreSQL y procesos asíncronos quedan como evolución para varias instancias; véase D-024.
-- La marca conservará el símbolo y la familia azul-turquesa-menta, pero utilizará una interfaz blanca, sobria y de alta precisión.
+- La marca usa el monograma `lU` con flecha, la paleta azul oscuro, celeste y cian, y las tipografías Lato y Raleway (D-026), sobre una interfaz clara, sobria y de alta precisión.
 
 ## Resultado que debe producir el MVP
 
@@ -135,7 +135,7 @@ Deben cerrarse cuatro asuntos empresariales que la documentación técnica no pu
 
 - Acuerdo de cofundadores, vesting, propiedad intelectual y autoridad de decisión.
 - Disponibilidad legal y comercial del nombre LinkUp, marca, dominio y cuentas.
-- Acceso al archivo vectorial original del logotipo y confirmación de sus colores oficiales.
+- Archivo vectorial original del logotipo; el símbolo actual es un redibujo fiel del tablero de marca.
 - Compromisos reales de startups y aliados para el piloto.
 
 Estos asuntos no bloquearon la alfa o la investigación, pero sí un lanzamiento público con inversión significativa.
