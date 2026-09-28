@@ -113,6 +113,8 @@ Las fechas originales se conservan: una oportunidad demostrativa vencida no apar
 
 Para cargar datos reales, `/admin/importar` → **Fichas completas** ofrece plantillas CSV de startups y de vacantes (títulos de columna en español, sin importar tildes ni mayúsculas; fechas `25/09/2026` o `2026-09-25`; separador `,` o `;`). Sube primero la hoja de startups y después la de vacantes: cada vacante se une a su startup por nombre. Todo se crea como borrador con errores explicados por fila, y se publica desde el editor tras revisar la fuente.
 
+Las mismas plantillas se cargan desde la terminal, sin límite de filas: `npm run importar -- datos/catalogo/startups.csv datos/catalogo/vacantes.csv`. Crea borradores atribuidos a `system`, pone primero las startups y no duplica si se repite. `datos/catalogo/` contiene el catálogo inicial curado (startups bolivianas y vacantes remotas que aceptan Bolivia, con fuentes y notas de revisión en la columna `notas`, que el importador ignora).
+
 La lista de propuestas admite hasta 100 filas / 1 MB. Columnas: `kind` (startup u opportunity), `organizationName`, `sourceUrl`; las oportunidades también necesitan `opportunityTitle`. Opcionales: `websiteUrl`, `notes`, `contactEmail`. Hay vista previa y resultados por fila. No hay scraping ni publicación automática. Los slugs, sitios y fuentes canónicas previenen duplicados; una edición desactualizada se rechaza para no pisar cambios ajenos.
 
 ### Alcance que funciona y límites

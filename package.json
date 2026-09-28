@@ -14,6 +14,7 @@
     "admin": "tsx scripts/admin.ts",
     "password": "tsx scripts/password.ts",
     "alerts": "tsx scripts/alerts.ts",
+    "importar": "tsx scripts/import-catalog.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

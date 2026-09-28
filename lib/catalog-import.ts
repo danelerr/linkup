@@ -1,8 +1,11 @@
 import type { z } from "zod";
+import { getOrganizations } from "@/lib/catalog";
 import {
+  CatalogError,
   describeIssues,
   opportunitySchema,
   organizationSchema,
+  saveCatalogEntry,
 } from "@/lib/catalog-editor";
 import {
   modalities,
@@ -14,9 +17,11 @@ import {
   opportunityColumns,
   slugify,
   startupColumns,
+  type ImportKind,
   type ImportRow,
   type MappedRow,
 } from "@/lib/catalog-import-columns";
+import { todayIso } from "@/lib/dates";
 
 export {
   detectKind,
@@ -168,4 +173,69 @@ export function mapOpportunityRow(
     }),
     opportunityColumns,
   );
+}
+
+export type ImportResult = {
+  row: number;
+  status: "created" | "duplicate" | "error";
+  message: string;
+  slug?: string;
+};
+
+/**
+ * Creates complete catalog records as drafts, reporting each row. Used by the
+ * admin upload and by `npm run importar`; openings find startups created in
+ * earlier calls, so import startups first.
+ */
+export function importCatalogRows(
+  actorId: string,
+  kind: ImportKind,
+  rows: ImportRow[],
+): ImportResult[] {
+  const today = todayIso();
+  const startups = new Map<string, string>();
+  for (const organization of getOrganizations(true)) {
+    startups.set(organization.slug, organization.slug);
+    startups.set(normalizeText(organization.name), organization.slug);
+  }
+  const findStartup = (value: string) =>
+    startups.get(value.trim()) ?? startups.get(normalizeText(value));
+  const results: ImportResult[] = [];
+  for (const [index, row] of rows.entries()) {
+    // Spreadsheets number the header as row 1.
+    const rowNumber = index + 2;
+    const mapped =
+      kind === "startup"
+        ? mapStartupRow(row, today)
+        : mapOpportunityRow(row, today, findStartup);
+    if (!mapped.ok) {
+      results.push({
+        row: rowNumber,
+        status: "error",
+        message: mapped.errors.join(" · "),
+      });
+      continue;
+    }
+    try {
+      const saved = saveCatalogEntry(actorId, {
+        kind,
+        data: mapped.data,
+        reason: "Importación de fichas completas",
+      });
+      results.push({
+        row: rowNumber,
+        status: "created",
+        message: "Borrador creado.",
+        slug: saved.slug,
+      });
+    } catch (error) {
+      if (!(error instanceof CatalogError)) throw error;
+      results.push({
+        row: rowNumber,
+        status: error.status === 409 ? "duplicate" : "error",
+        message: error.message,
+      });
+    }
+  }
+  return results;
 }
