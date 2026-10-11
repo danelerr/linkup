@@ -95,7 +95,19 @@ try {
     401,
   );
   check("anonymous and forged-header requests cannot access private data");
-  const password = "Integration-only-passphrase-2026";
+  const signupHtml = await (await fetch(`${origin}/ingresar?cuenta=nueva`)).text();
+  const signupPassword = signupHtml.match(/<input\b[^>]*name="password"[^>]*>/)?.[0];
+  assert(signupPassword);
+  assert.match(signupPassword, /minlength="4"/i);
+  assert.doesNotMatch(signupHtml, /12 caracteres/);
+  const tooShort = await api("/api/auth/sign-up/email", "POST", {
+    email: "too-short@example.test",
+    password: "abc",
+    name: "Short Password",
+  });
+  assert.equal(tooShort.response.status, 400);
+  assert.equal(tooShort.data.code, "PASSWORD_TOO_SHORT");
+  const password = "test";
   const registered = await api("/api/auth/sign-up/email", "POST", {
     email: "operator@example.test",
     password,
@@ -116,7 +128,7 @@ try {
   db.prepare("UPDATE users SET role='admin' WHERE email=?").run(
     "operator@example.test",
   );
-  check("own email/password registration creates a persistent session");
+  check("registration accepts four lowercase characters, rejects three and matches the form");
   const wrongLogin = await api("/api/auth/sign-in/email", "POST", {
     email: "operator@example.test",
     password: "Incorrect-passphrase-2026",
@@ -796,12 +808,26 @@ try {
     .getSetCookie()
     .map((value) => value.split(";")[0])
     .join("; ");
+  const profileHtml = await (await fetch(`${origin}/mi-linkup/perfil`, {
+    headers: { cookie: temporaryCookie },
+  })).text();
+  const newPasswordInput = profileHtml.match(/<input\b[^>]*name="newPassword"[^>]*>/)?.[0];
+  assert(newPasswordInput);
+  assert.match(newPasswordInput, /minlength="4"/i);
+  const shortChange = await api(
+    "/api/auth/change-password",
+    "POST",
+    { currentPassword: temporaryPassword, newPassword: "abc" },
+    temporaryCookie,
+  );
+  assert.equal(shortChange.response.status, 400);
+  assert.equal(shortChange.data.code, "PASSWORD_TOO_SHORT");
   const changed = await api(
     "/api/auth/change-password",
     "POST",
     {
       currentPassword: temporaryPassword,
-      newPassword: "Nueva-frase-de-prueba-2026",
+      newPassword: "next",
       revokeOtherSessions: true,
     },
     temporaryCookie,
@@ -823,7 +849,7 @@ try {
     401,
   );
   check(
-    "an operator can reset a password without email and the person can change it",
+    "password reset and change accept four characters, reject three and match the form",
   );
   const member = (method: string, body: unknown, as = cookie) =>
     api("/api/organization/members", method, body, as);
@@ -952,6 +978,70 @@ try {
     400,
   );
   assert.equal(
+    (await api("/api/account", "DELETE", { confirmation: "ELIMINAR" }))
+      .response.status,
+    401,
+  );
+  const beforeBlockedDeletion = await api(
+    "/api/account/export",
+    "GET",
+    undefined,
+    cookie,
+  );
+  const blockedDeletion = await api(
+    "/api/account",
+    "DELETE",
+    { confirmation: "ELIMINAR" },
+    cookie,
+  );
+  assert.equal(blockedDeletion.response.status, 409);
+  assert.equal(blockedDeletion.data.code, "LAST_ORGANIZATION_OWNER");
+  assert.deepEqual(blockedDeletion.data.organizations, [
+    { slug: "estudio", name: "Estudio estudio" },
+  ]);
+  assert.match(blockedDeletion.data.error, /asigna a otra persona/);
+  assert.equal(
+    (await api("/api/profile", "GET", undefined, cookie)).response.status,
+    200,
+  );
+  const afterBlockedDeletion = await api(
+    "/api/account/export",
+    "GET",
+    undefined,
+    cookie,
+  );
+  for (const key of [
+    "account",
+    "profile",
+    "savedOpportunities",
+    "alerts",
+    "notifications",
+    "applications",
+    "applicationEvents",
+    "organizationMemberships",
+    "auditEvents",
+  ])
+    assert.deepEqual(
+      afterBlockedDeletion.data[key],
+      beforeBlockedDeletion.data[key],
+      key,
+    );
+  // The owner explicitly chooses a successor. Closing the account must not
+  // promote a recruiter or viewer automatically.
+  assert.equal(
+    (
+      await member("POST", {
+        ...team,
+        email: "operator@example.test",
+        memberRole: "owner",
+      })
+    ).response.status,
+    201,
+  );
+  check(
+    "account deletion preserves data and sessions until another active owner is assigned",
+  );
+  assert.equal(
     (await api("/api/account", "DELETE", { confirmation: "ELIMINAR" }, cookie))
       .response.status,
     200,
@@ -959,6 +1049,14 @@ try {
   assert.equal(
     (await api("/api/profile", "GET", undefined, cookie)).response.status,
     401,
+  );
+  assert.deepEqual(
+    db
+      .prepare(
+        "SELECT user_id FROM organization_members WHERE organization_slug=? AND member_role='owner' AND status='active'",
+      )
+      .all("estudio"),
+    [{ user_id: operatorAccount.id }],
   );
   assert.equal(
     (

@@ -1,0 +1,95 @@
+{
+  "capturedAt": "2026-09-30T03:28:34.817Z",
+  "database": "/Users/daniel/Desktop/linkup/.data/linkup.sqlite",
+  "backup": "/Users/daniel/Desktop/linkup/.data/backups/antes-recopilacion-2026-09-30T03-28-34-817Z.sqlite",
+  "results": {
+    "startups": [
+      {
+        "row": 2,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "sommos"
+      },
+      {
+        "row": 3,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "enviospet"
+      },
+      {
+        "row": 4,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "supabase"
+      },
+      {
+        "row": 5,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "buffer"
+      },
+      {
+        "row": 6,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "decisions"
+      }
+    ],
+    "opportunities": [
+      {
+        "row": 2,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "support-engineer-amer-weekends-supabase"
+      },
+      {
+        "row": 3,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "postgres-deployment-engineer-nix-supabase"
+      },
+      {
+        "row": 4,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "release-engineer-supabase"
+      },
+      {
+        "row": 5,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "engineering-productivity-engineer-supabase"
+      },
+      {
+        "row": 6,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "senior-data-analyst-marketing-supabase"
+      },
+      {
+        "row": 7,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "software-engineer-branching-supabase"
+      },
+      {
+        "row": 8,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "finops-engineer-supabase"
+      },
+      {
+        "row": 9,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "aws-partner-marketing-manager-supabase"
+      },
+      {
+        "row": 10,
+        "status": "created",
+        "message": "Borrador creado.",
+        "slug": "senior-infrastructure-engineer-buffer"
+      }
+    ]
+  }
+}

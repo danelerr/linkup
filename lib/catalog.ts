@@ -189,7 +189,7 @@ export function organizationForOpportunity(opportunity: Opportunity) {
   return organizationBySlug(opportunity.organizationSlug);
 }
 
-/** Open opportunities at other startups, closest area first. */
+/** Same area and experience at other startups; prefer similar conditions. */
 export function similarOpportunities(opportunity: Opportunity, limit = 3) {
   ensureCatalog();
   const rows = getSqlite()
@@ -199,8 +199,9 @@ export function similarOpportunities(opportunity: Opportunity, limit = 3) {
       WHERE p.status = 'published' AND o.status = 'published'
         AND (p.closes_at IS NULL OR p.closes_at >= @today)
         AND p.organization_slug != @organization
-        AND (p.area = @area OR p.type = @type OR p.level = @level)
-      ORDER BY (p.area = @area) DESC, (p.level = @level) DESC, p.published_at DESC
+        AND p.area = @area AND p.level = @level
+      ORDER BY (p.type = @type) DESC, (p.modality = @modality) DESC,
+        p.published_at DESC, p.slug
       LIMIT @limit`,
     )
     .all({
@@ -209,6 +210,7 @@ export function similarOpportunities(opportunity: Opportunity, limit = 3) {
       area: opportunity.area,
       type: opportunity.type,
       level: opportunity.level,
+      modality: opportunity.modality,
       limit,
     }) as { opportunity: string; organization: string }[];
   return rows.map((row) => ({

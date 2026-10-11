@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { LoaderCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth-policy";
 import { buttonClass } from "@/components/ui/button";
 import {
   controlClass,
@@ -73,14 +74,14 @@ export function ChangePasswordForm() {
         </Field>
         <Field
           label="Nueva contraseña"
-          hint="Al menos 12 caracteres. Puedes usar una frase."
+          hint={`Mínimo ${MIN_PASSWORD_LENGTH} caracteres.`}
         >
           <input
             className={controlClass}
             name="newPassword"
             type="password"
             required
-            minLength={12}
+            minLength={MIN_PASSWORD_LENGTH}
             maxLength={128}
             autoComplete="new-password"
           />
@@ -91,7 +92,7 @@ export function ChangePasswordForm() {
             name="confirmation"
             type="password"
             required
-            minLength={12}
+            minLength={MIN_PASSWORD_LENGTH}
             maxLength={128}
             autoComplete="new-password"
           />

@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { getSqlite } from "@/db";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth-policy";
 
 function localSecret() {
   if (process.env.BETTER_AUTH_SECRET) return process.env.BETTER_AUTH_SECRET;
@@ -41,7 +42,7 @@ function options(): BetterAuthOptions {
     verification: { modelName: "auth_verification" },
     emailAndPassword: {
       enabled: true,
-      minPasswordLength: 12,
+      minPasswordLength: MIN_PASSWORD_LENGTH,
       maxPasswordLength: 128,
     },
     rateLimit: { enabled: true, window: 60, max: 30 },

@@ -1,0 +1,27 @@
+[
+  {
+    "organization": "decisions",
+    "title": "Accountant",
+    "source": "https://ats.rippling.com/decisions/jobs/807f9c2e-008d-4b79-9502-c832d1008076",
+    "locations": [
+      "La Paz, Bolivia, Plurinational State of"
+    ],
+    "sourcePublishedAt": "2026-09-01T12:25:05.054000-07:00",
+    "capturedAt": "2026-09-30T03:28:34.817Z",
+    "summary": "Contabilidad, conciliaciones, nómina y cumplimiento tributario local; requiere 3 años de experiencia e inglés y español.",
+    "reason": "Ubicación La Paz confirmada. La descripción ofrece opciones remotas o híbridas como beneficio general, pero no precisa modalidad de esta vacante."
+  },
+  {
+    "organization": "decisions",
+    "title": "Sales Operations Analyst",
+    "source": "https://ats.rippling.com/decisions/jobs/41dc2eb9-2e76-423f-9b76-03b340baf124",
+    "locations": [
+      "Bogotá, Colombia",
+      "La Paz, Bolivia, Plurinational State of"
+    ],
+    "sourcePublishedAt": "2026-08-12T13:03:40.392000-07:00",
+    "capturedAt": "2026-09-30T03:28:34.817Z",
+    "summary": "Operaciones comerciales, Salesforce, reportes y revisión de contratos; requiere 2–4 años de experiencia e inglés avanzado.",
+    "reason": "La Paz y Bogotá figuran como ubicaciones. No hay modalidad explícita; no se inventa presencial/híbrido/remoto."
+  }
+]

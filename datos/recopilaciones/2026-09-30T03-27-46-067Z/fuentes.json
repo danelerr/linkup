@@ -1,0 +1,209 @@
+{
+  "capturedAt": "2026-09-30T03:27:46.067Z",
+  "state": "draft",
+  "evidence": [
+    {
+      "kind": "robots",
+      "source": "https://sommosapp.com/robots.txt",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "observation": "Sin directivas robots disponibles; solo página pública revisada."
+    },
+    {
+      "kind": "startup",
+      "source": "https://sommosapp.com/",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "afaa6d945e7b533a119bbbc22de54b42aa03602744858c09a84c9044f7297426",
+      "notes": "Contenido dinámico: síntesis contrastada con la página oficial indexada. No se atribuyen tamaño de equipo, financiación ni vacantes."
+    },
+    {
+      "kind": "robots",
+      "source": "https://membresia.enviospet.com/robots.txt",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "observation": "Sin directivas robots disponibles; solo página pública revisada."
+    },
+    {
+      "kind": "startup",
+      "source": "https://membresia.enviospet.com/membresia",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "290c3148c34314bcd3097eceefd795aeee8d9535560f167931e49e0dd3fff66f",
+      "notes": "No se infiere ciudad, número de empleados ni disponibilidad de vacantes a partir de la tienda."
+    },
+    {
+      "kind": "robots",
+      "source": "https://supabase.com/robots.txt",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "b4810c8efae9f456e300781116815fadb4022b054d2b614f6a2dcfaa4bd6c038",
+      "observation": "Directivas robots evaluadas para LinkUpCatalogBot."
+    },
+    {
+      "kind": "startup",
+      "source": "https://supabase.com/careers",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "9e89faf256ff40e5a96cbc34da7ce36c9442facbaf2d9de8db7d7ac538cb7aa8",
+      "notes": "La contratación global no garantiza elegibilidad legal en cada país; confirmar en cada postulación."
+    },
+    {
+      "kind": "robots",
+      "source": "https://buffer.com/robots.txt",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "3706d9a82a0bafda29c967b2adcd16908a96a77b4907661358d302c719300560",
+      "observation": "Directivas robots evaluadas para LinkUpCatalogBot."
+    },
+    {
+      "kind": "startup",
+      "source": "https://buffer.com/journey",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "c4543ad14e6516d0b1cfda6c96a6c060499a39db123c080f6e4309a67579bcb1",
+      "notes": "Empresa de producto consolidada. No se inventa etapa de inversión o tamaño del equipo."
+    },
+    {
+      "kind": "robots",
+      "source": "https://decisions.com/robots.txt",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "40b4705b83f28b6a05fe69a47660bc2b61db3e4330d4b72a3a4cd06f2139aa5d",
+      "observation": "Directivas robots evaluadas para LinkUpCatalogBot."
+    },
+    {
+      "kind": "startup",
+      "source": "https://decisions.com/careers",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "519a9f26590dd952b2a45698966e0dd0d6451d2df5771864d8a7d63cea46393a",
+      "notes": "ProcessMaker redirige a Decisions. Se crea una sola organización; la modalidad de sus avisos locales requiere confirmación."
+    },
+    {
+      "kind": "opportunity",
+      "source": "https://jobs.ashbyhq.com/supabase/dcf09dfe-55bc-44ba-b5db-1a2de7f33216",
+      "feed": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+      "externalId": "dcf09dfe-55bc-44ba-b5db-1a2de7f33216",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sourcePublishedAt": "2026-07-31T22:08:18.588+00:00",
+      "sha256": "d0c8ef22fbe2469f35fdaac4d11464c24e72ea134e9ef066438ba4b169286557",
+      "notes": "No confundir modalidad remota con horario flexible."
+    },
+    {
+      "kind": "opportunity",
+      "source": "https://jobs.ashbyhq.com/supabase/48950725-e0d9-4025-92d9-f75e1b60ce45",
+      "feed": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+      "externalId": "48950725-e0d9-4025-92d9-f75e1b60ce45",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sourcePublishedAt": "2026-06-26T15:11:07.016+00:00",
+      "sha256": "250b99870ab40cf51e51d249cd6ff0dcc63c0bb2cea833af982d90fa3c3797cb",
+      "notes": "Elegibilidad y condiciones sujetas a confirmación con la empresa; revisión humana antes de publicar."
+    },
+    {
+      "kind": "opportunity",
+      "source": "https://jobs.ashbyhq.com/supabase/f6035bf8-4f44-4425-9944-d5509a3c8652",
+      "feed": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+      "externalId": "f6035bf8-4f44-4425-9944-d5509a3c8652",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sourcePublishedAt": "2026-07-27T11:06:59.312+00:00",
+      "sha256": "69e0548b21b72f5640f73806421af32316c4ae7f53a99d32288ee6a508aceda8",
+      "notes": "Elegibilidad y condiciones sujetas a confirmación con la empresa; revisión humana antes de publicar."
+    },
+    {
+      "kind": "opportunity",
+      "source": "https://jobs.ashbyhq.com/supabase/8229db66-dc3f-4ffe-8d86-90ce9ffb4c90",
+      "feed": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+      "externalId": "8229db66-dc3f-4ffe-8d86-90ce9ffb4c90",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sourcePublishedAt": "2026-08-02T10:39:06.516+00:00",
+      "sha256": "130e9426efab7a1100905fcd1240801a8c647c360195a9276d7089ca93d18304",
+      "notes": "Elegibilidad y condiciones sujetas a confirmación con la empresa; revisión humana antes de publicar."
+    },
+    {
+      "kind": "opportunity",
+      "source": "https://jobs.ashbyhq.com/supabase/59083a14-b2b6-4dd8-8037-739aa1ad1e22",
+      "feed": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+      "externalId": "59083a14-b2b6-4dd8-8037-739aa1ad1e22",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sourcePublishedAt": "2026-08-04T19:08:19.856+00:00",
+      "sha256": "6ab33437186adee354c98c87b0b3bb02cd9531c7e0f3c3fcd7d062a2e3b9877f",
+      "notes": "Elegibilidad y condiciones sujetas a confirmación con la empresa; revisión humana antes de publicar."
+    },
+    {
+      "kind": "opportunity",
+      "source": "https://jobs.ashbyhq.com/supabase/06752423-eebb-472c-95b5-c7ff2559fd60",
+      "feed": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+      "externalId": "06752423-eebb-472c-95b5-c7ff2559fd60",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sourcePublishedAt": "2026-09-02T10:25:03.190+00:00",
+      "sha256": "b2188aae7e38f60f06704b43a8d1ec39159c5b5e481e0bbf1c51de205049903a",
+      "notes": "Elegibilidad y condiciones sujetas a confirmación con la empresa; revisión humana antes de publicar."
+    },
+    {
+      "kind": "opportunity",
+      "source": "https://jobs.ashbyhq.com/supabase/fab1525f-3d89-4d1c-9094-84d21647415e",
+      "feed": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+      "externalId": "fab1525f-3d89-4d1c-9094-84d21647415e",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sourcePublishedAt": "2026-09-16T18:40:09.760+00:00",
+      "sha256": "d0c285e1bee3b2bf1bee4c3300df6d5435a149253d03628fa1a08de9bba66a5d",
+      "notes": "Elegibilidad y condiciones sujetas a confirmación con la empresa; revisión humana antes de publicar."
+    },
+    {
+      "kind": "opportunity",
+      "source": "https://jobs.ashbyhq.com/supabase/8e4ddc16-6308-432a-acea-55709c15ddc7",
+      "feed": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+      "externalId": "8e4ddc16-6308-432a-acea-55709c15ddc7",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sourcePublishedAt": "2026-09-22T15:00:43.044+00:00",
+      "sha256": "05baf80fc392e83a2627fa895a45fcdc55d99fbac933b71f2eed9a226624ffe8",
+      "notes": "Elegibilidad y condiciones sujetas a confirmación con la empresa; revisión humana antes de publicar."
+    },
+    {
+      "kind": "feed",
+      "source": "https://api.ashbyhq.com/posting-api/job-board/supabase?includeCompensation=true",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "listed": 50,
+      "policy": "https://developers.ashbyhq.com/docs/public-job-posting-api",
+      "sha256": "93c411a6bf84db3503eefa6bc3c8f02debf5d3d7257250f03e0368315735ba05"
+    },
+    {
+      "kind": "opportunity",
+      "source": "https://jobs.ashbyhq.com/buffer/1ee8b707-48a0-40cc-a319-3fb7c665a1e8",
+      "feed": "https://api.ashbyhq.com/posting-api/job-board/buffer?includeCompensation=true",
+      "externalId": "1ee8b707-48a0-40cc-a319-3fb7c665a1e8",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sourcePublishedAt": "2026-07-28T18:06:50.063+00:00",
+      "sha256": "a0fab8ba0e2fc0324504c70a0bd554f7825a8ffc1faed32685ff7dc673405c41",
+      "notes": "Preferencia de cuatro horas de solapamiento con EMEA, no exclusión de otros países. Rango salarial anual en USD según el feed oficial."
+    },
+    {
+      "kind": "feed",
+      "source": "https://api.ashbyhq.com/posting-api/job-board/buffer?includeCompensation=true",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "listed": 1,
+      "policy": "https://developers.ashbyhq.com/docs/public-job-posting-api",
+      "sha256": "d1390b9e1c64c3e6708931255beaab6f7c30cf254109148f3e4ba04f5067d247"
+    },
+    {
+      "kind": "robots",
+      "source": "https://ats.rippling.com/robots.txt",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "0f6ff9a2756ac248a352c47876e1f33bac1f62543696441d4c9caa6111e68a96",
+      "observation": "Directivas robots evaluadas para LinkUpCatalogBot."
+    },
+    {
+      "kind": "pending-opportunity",
+      "source": "https://ats.rippling.com/decisions/jobs/807f9c2e-008d-4b79-9502-c832d1008076",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "5a684bcc8ddff3e987bbda5d70ae01bf12ca20c0952533ac734474be14d8433e"
+    },
+    {
+      "kind": "pending-opportunity",
+      "source": "https://ats.rippling.com/decisions/jobs/41dc2eb9-2e76-423f-9b76-03b340baf124",
+      "capturedAt": "2026-09-30T03:27:46.067Z",
+      "sha256": "ddac4f0074ed7856c2984956ed3017079bdbd502317bb9756d5be89301aca735"
+    }
+  ],
+  "rejected": [],
+  "limitations": [
+    "No recopila perfiles, formularios de candidatos ni contactos personales.",
+    "No publica, actualiza ni cierra registros existentes.",
+    "Solo se importan vacantes seleccionadas y resumidas editorialmente; no todas las posiciones del feed.",
+    "La fecha de comprobación indica captura de fuente, no aval ni representación de la empresa.",
+    "Los avisos nuevos o cambiados requieren revisión antes de ampliar la selección."
+  ]
+}

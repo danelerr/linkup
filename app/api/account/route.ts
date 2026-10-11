@@ -15,6 +15,15 @@ export async function DELETE(request: Request) {
       { status: 400 },
     );
   await syncUser(user);
-  await deleteUserData(user.userId);
+  const result = await deleteUserData(user.userId);
+  if (!result.deleted)
+    return Response.json(
+      {
+        error: `Antes de eliminar tu cuenta, asigna a otra persona como Responsable en el equipo de: ${result.organizations.map((organization) => organization.name).join(", ")}. No podemos dejar una startup sin responsable.`,
+        code: "LAST_ORGANIZATION_OWNER",
+        organizations: result.organizations,
+      },
+      { status: 409 },
+    );
   return Response.json({ ok: true, signOutPath: "/" });
 }

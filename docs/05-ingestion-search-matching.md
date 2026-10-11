@@ -9,7 +9,9 @@ Funciona: envíos manuales y CSV/JSON (100 registros por lote) → validación y
 
 Búsqueda SQL paginada sobre contenido normalizado, incluidos requisitos; filtros de industria, área, tipo, modalidad y nivel. No se envía el catálogo completo al navegador. Alertas conservan esos filtros y generan avisos internos para oportunidades publicadas después de guardar la búsqueda. No envían correos.
 
-Lo descrito debajo sobre adaptadores, extracción, procedencia por campo, revalidación de fuentes, ranking y matching es **diseño objetivo**, no automatización instalada. Ningún importador visita enlaces o recopila contenido remoto en esta versión.
+Actualización · 29 de septiembre de 2026: `npm run recopilar` consulta una selección revisada de páginas oficiales y feeds públicos de Ashby. Genera fichas JSON, hashes, fecha original del aviso y registros pendientes; `--importar` respalda SQLite y crea borradores sin sobrescribir ni publicar. No recopila perfiles personales, no sortea controles y no inventa campos ausentes. [Operación y límites](../datos/recopilaciones/LEEME.md).
+
+Lo descrito debajo sobre adaptadores generalizados, procedencia por campo, revalidación programada, ranking y matching sigue siendo **diseño objetivo**. La interfaz de propuestas no visita enlaces, y el comando de recopilación no actualiza ni cierra automáticamente avisos existentes.
 
 ## Tipos de oferta
 

@@ -291,3 +291,58 @@ test("visits only write the account when something changed or an hour passed", a
   await syncUser({ ...person, fullName: "Ana María" });
   assert.notEqual(row().last_seen_at, stale);
 });
+
+test("similar opportunities require the same area and experience, not just employment type", () => {
+  const roles = [
+    { slug: "match-reference", area: "Ingeniería", level: "Senior" },
+    { slug: "match-same", area: "Ingeniería", level: "Senior" },
+    { slug: "match-recruiting", area: "Reclutamiento", level: "Senior" },
+    { slug: "match-junior", area: "Ingeniería", level: "Junior" },
+    {
+      slug: "match-project",
+      area: "Ingeniería",
+      level: "Senior",
+      type: "Proyecto pagado" as const,
+    },
+    {
+      slug: "match-onsite",
+      area: "Ingeniería",
+      level: "Senior",
+      modality: "Presencial" as const,
+    },
+    {
+      slug: "match-closed",
+      area: "Ingeniería",
+      level: "Senior",
+      status: "closed" as const,
+    },
+    {
+      slug: "match-draft",
+      area: "Ingeniería",
+      level: "Senior",
+      status: "draft" as const,
+    },
+  ];
+  for (const role of roles) {
+    saveCatalogEntry("test", {
+      kind: "startup",
+      data: startup(role.slug),
+      reason: "Prueba de afinidad",
+    });
+    saveCatalogEntry("test", {
+      kind: "opportunity",
+      data: { ...opportunity(role.slug, role.slug), ...role },
+      reason: "Prueba de afinidad",
+    });
+  }
+  const reference = opportunityBySlug("match-reference")!;
+  assert.deepEqual(
+    similarOpportunities(reference).map((item) => item.opportunity.slug),
+    ["match-same", "match-onsite", "match-project"],
+  );
+  assert.equal(similarOpportunities(reference, 1).length, 1);
+  assert.deepEqual(
+    similarOpportunities(opportunityBySlug("match-recruiting")!),
+    [],
+  );
+});

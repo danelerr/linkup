@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth-policy";
 import { safeRelativeReturnPath } from "@/lib/navigation";
 import { buttonClass } from "@/components/ui/button";
 import { controlClass, Field, FormError } from "@/components/ui/field";
@@ -115,7 +116,7 @@ export function AuthForm({
           label="Contraseña"
           hint={
             mode === "signup"
-              ? "Al menos 12 caracteres. Puedes usar una frase."
+              ? `Mínimo ${MIN_PASSWORD_LENGTH} caracteres.`
               : undefined
           }
         >
@@ -124,7 +125,7 @@ export function AuthForm({
             name="password"
             type="password"
             required
-            minLength={mode === "signup" ? 12 : 1}
+            minLength={mode === "signup" ? MIN_PASSWORD_LENGTH : 1}
             maxLength={128}
             autoComplete={
               mode === "signup" ? "new-password" : "current-password"

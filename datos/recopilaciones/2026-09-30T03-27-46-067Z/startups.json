@@ -1,0 +1,59 @@
+[
+  {
+    "nombre": "Sommos",
+    "descripcion_corta": "Herramientas digitales para ahorro individual, comunitario y gestión de créditos.",
+    "descripcion": "Sommos desarrolla productos para organizar ahorro programado, grupos de ahorro rotativo y gestión de créditos. Sus soluciones permiten a entidades financieras y comercios digitalizar prácticas de ahorro y dar seguimiento a aportes y metas.",
+    "industria": "Fintech",
+    "sitio_web": "https://sommosapp.com/",
+    "fuente": "https://sommosapp.com/",
+    "nombre_fuente": "Sitio oficial de Sommos",
+    "enlace": "sommos",
+    "comprobado": "2026-09-30"
+  },
+  {
+    "nombre": "EnvíosPet",
+    "descripcion_corta": "Compras y membresía de productos y beneficios para el cuidado de mascotas.",
+    "descripcion": "EnvíosPet ofrece una experiencia de compra para productos de mascotas y una membresía anual con descuentos y beneficios de cuidado. Su página oficial explica cómo activar la membresía y utilizar sus beneficios en la aplicación.",
+    "industria": "Comercio electrónico",
+    "sitio_web": "https://enviospet.com/",
+    "fuente": "https://membresia.enviospet.com/membresia",
+    "nombre_fuente": "Membresía oficial de EnvíosPet",
+    "enlace": "enviospet",
+    "comprobado": "2026-09-30"
+  },
+  {
+    "nombre": "Supabase",
+    "descripcion_corta": "Plataforma de desarrollo con PostgreSQL, autenticación, almacenamiento y funciones.",
+    "descripcion": "Supabase proporciona servicios de backend para crear aplicaciones: bases de datos PostgreSQL, autenticación, almacenamiento, funciones, comunicación en tiempo real y búsqueda vectorial. Su equipo trabaja de forma distribuida y mantiene una página oficial de contratación.",
+    "industria": "Software e infraestructura",
+    "sitio_web": "https://supabase.com/",
+    "fuente": "https://supabase.com/careers",
+    "nombre_fuente": "Careers oficial de Supabase",
+    "modalidad_trabajo": "Remota",
+    "enlace": "supabase",
+    "comprobado": "2026-09-30"
+  },
+  {
+    "nombre": "Buffer",
+    "descripcion_corta": "Software para planificar contenido, publicar y gestionar presencia en redes sociales.",
+    "descripcion": "Buffer desarrolla herramientas de publicación y gestión de redes sociales para pequeños negocios y creadores. Opera con un equipo distribuido y publica información sobre su cultura de trabajo y sus posiciones abiertas.",
+    "industria": "Software y marketing",
+    "sitio_web": "https://buffer.com/",
+    "fuente": "https://buffer.com/journey",
+    "nombre_fuente": "Página oficial de Buffer",
+    "modalidad_trabajo": "Remota",
+    "enlace": "buffer",
+    "comprobado": "2026-09-30"
+  },
+  {
+    "nombre": "Decisions",
+    "descripcion_corta": "Plataforma para automatizar procesos con flujos, reglas, aprobaciones e inteligencia artificial.",
+    "descripcion": "Decisions desarrolla una plataforma de orquestación de procesos para organizaciones. Combina flujos de trabajo, reglas de negocio, aprobaciones e inteligencia artificial. Su sitio actual integra ProcessMaker y mantiene un portal oficial de vacantes en Rippling.",
+    "industria": "Software empresarial",
+    "sitio_web": "https://decisions.com/",
+    "fuente": "https://decisions.com/careers",
+    "nombre_fuente": "Careers oficial de Decisions",
+    "enlace": "decisions",
+    "comprobado": "2026-09-30"
+  }
+]

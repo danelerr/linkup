@@ -870,7 +870,29 @@ export async function deleteUserData(userId: string) {
   await ensureDatabase();
   const client = getSqlite();
   const pseudonym = `deleted:${crypto.randomUUID()}`;
-  client.transaction(() => {
+  // Reserve the write transaction before checking ownership, so concurrent
+  // account closures cannot both rely on the other owner remaining active.
+  return client.transaction(() => {
+    // Check every membership before deleting anything. A recruiter or an
+    // inactive owner cannot take over; the person must choose a new owner.
+    const organizations = client
+      .prepare(
+        `SELECT m.organization_slug AS slug,
+          COALESCE(o.name, m.organization_slug) AS name
+        FROM organization_members m
+        LEFT JOIN catalog_organizations o ON o.slug = m.organization_slug
+        WHERE m.user_id = ? AND m.member_role = 'owner' AND m.status = 'active'
+          AND NOT EXISTS (
+            SELECT 1 FROM organization_members other
+            WHERE other.organization_slug = m.organization_slug
+              AND other.user_id != m.user_id
+              AND other.member_role = 'owner' AND other.status = 'active'
+          )
+        ORDER BY name, slug`,
+      )
+      .all(userId) as { slug: string; name: string }[];
+    if (organizations.length)
+      return { deleted: false as const, organizations };
     client
       .prepare(
         "DELETE FROM application_events WHERE application_id IN (SELECT id FROM applications WHERE user_id=?)",
@@ -915,7 +937,8 @@ export async function deleteUserData(userId: string) {
       .run(pseudonym, userId);
     client.prepare("DELETE FROM users WHERE id=?").run(userId);
     client.prepare("DELETE FROM auth_user WHERE id=?").run(userId);
-  })();
+    return { deleted: true as const };
+  }).immediate();
 }
 
 async function recordAudit(

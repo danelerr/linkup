@@ -23,7 +23,7 @@ const credential = await context.internalAdapter.findCredentialAccount(
 );
 if (!credential) throw new Error("Esa cuenta no ingresa con contraseña.");
 
-// Four groups of five unambiguous characters: easy to dictate, over 12 long.
+// Four groups of five unambiguous characters: easy to dictate.
 const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
 const temporary = Array.from({ length: 4 }, () =>
   Array.from({ length: 5 }, () => alphabet[randomInt(alphabet.length)]).join(
