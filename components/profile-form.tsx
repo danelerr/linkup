@@ -99,7 +99,7 @@ export function ProfileForm({
       <FormSection
         number="01"
         title="Lo que buscas"
-        description="Nos permite explicarte por qué una oportunidad puede encajar."
+        description="La startup lo ve cuando postulas."
       >
         <Field className="sm:col-span-2" label="Rol u objetivo principal">
           <input
@@ -178,7 +178,7 @@ export function ProfileForm({
 
       <FormSection
         number="02"
-        title="Tu señal"
+        title="Tu experiencia"
         description="No exigimos años de experiencia. Un proyecto concreto también cuenta."
       >
         <Field className="sm:col-span-2" label="Presentación breve" optional>
@@ -212,7 +212,7 @@ export function ProfileForm({
       <FormSection
         number="03"
         title="Privacidad y consentimiento"
-        description="Tu perfil es privado. Solo compartimos una copia cuando tú postulas."
+        description="Nadie ve tu perfil hasta que postulas."
       >
         <Check
           className="sm:col-span-2"

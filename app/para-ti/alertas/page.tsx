@@ -30,16 +30,15 @@ export default async function AlertsPage({
 }) {
   const params = await searchParams;
   const filters = filterParams(parseFilters(params));
-  const user = await requireSyncedUser(`/mi-linkup/alertas?${filters}`);
+  const user = await requireSyncedUser(`/para-ti/alertas?${filters}`);
   const alerts = await listSavedSearches(user.userId);
   const notifications = await listNotifications(user.userId);
   const unread = notifications.filter((item) => !item.read_at).length;
   return (
     <div className="grid gap-10">
       <PageHeader
-        eyebrow="Mi LinkUp"
         title="Alertas"
-        description="Guarda una búsqueda y encuentra aquí sus nuevas coincidencias, según la frecuencia que elijas. Todavía no enviamos correos."
+        description="Guarda una búsqueda y aquí verás las oportunidades nuevas que coincidan. Por ahora no enviamos correos."
       />
       <AlertForm initialFilters={Object.fromEntries(filters.entries())} />
 

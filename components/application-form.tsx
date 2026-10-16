@@ -58,7 +58,7 @@ export function ApplicationForm({
     if (!response.ok) {
       if (payload.code === "PROFILE_INCOMPLETE")
         router.push(
-          `/mi-linkup/perfil?return_to=${encodeURIComponent(`/oportunidades/${opportunitySlug}/postular`)}`,
+          `/para-ti/perfil?return_to=${encodeURIComponent(`/oportunidades/${opportunitySlug}/postular`)}`,
         );
       else {
         setState("error");
@@ -66,7 +66,7 @@ export function ApplicationForm({
       }
       return;
     }
-    router.push("/mi-linkup/postulaciones?enviada=1");
+    router.push("/para-ti/postulaciones?enviada=1");
   }
 
   const shared = [

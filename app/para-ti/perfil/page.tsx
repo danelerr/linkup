@@ -20,7 +20,7 @@ export default async function ProfilePage({
 }: {
   searchParams: Promise<{ return_to?: string }>;
 }) {
-  const user = await requireSyncedUser("/mi-linkup/perfil");
+  const user = await requireSyncedUser("/para-ti/perfil");
   const params = await searchParams;
   const returnTo = params.return_to
     ? safeRelativeReturnPath(params.return_to)
@@ -36,7 +36,6 @@ export default async function ProfilePage({
   return (
     <div className="grid gap-10">
       <PageHeader
-        eyebrow="Mi LinkUp"
         title="Perfil"
         description="Es privado. Solo lo ve una startup cuando postulas a ella dentro de LinkUp."
       />

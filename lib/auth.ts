@@ -38,7 +38,7 @@ function localSecret() {
 function options(): BetterAuthOptions {
   // With email, accounts are created only by signing in with a 6-digit code,
   // so every account has proven its address. A password is optional and is
-  // added afterwards with another code (Mi LinkUp → Perfil).
+  // added afterwards with another code (Para ti → Perfil).
   const email = emailEnabled();
   // Production sets BETTER_AUTH_URL. Preview deployments have no fixed
   // address, so their deployment and branch URLs are trusted instead.

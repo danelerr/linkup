@@ -52,7 +52,7 @@ export function RecordExternalApplication({
       );
     } else if (payload.code === "PROFILE_INCOMPLETE") {
       router.push(
-        `/mi-linkup/perfil?return_to=${encodeURIComponent(returnTo)}`,
+        `/para-ti/perfil?return_to=${encodeURIComponent(returnTo)}`,
       );
     } else {
       setError(payload.error ?? "No pudimos registrar esta postulación.");
@@ -85,7 +85,7 @@ export function RecordExternalApplication({
         );
       } else if (payload.code === "PROFILE_INCOMPLETE") {
         router.push(
-          `/mi-linkup/perfil?return_to=${encodeURIComponent(returnTo)}`,
+          `/para-ti/perfil?return_to=${encodeURIComponent(returnTo)}`,
         );
       } else
         setError(payload.error ?? "No pudimos registrar esta postulación.");
@@ -99,7 +99,7 @@ export function RecordExternalApplication({
       <p className={wrapper}>
         <span className="text-muted">¿Ya postulaste? </span>
         <Link className={textLinkClass} href={signInPath(returnTo, true)}>
-          Regístralo en tu LinkUp
+          Regístralo en tus postulaciones
         </Link>
       </p>
     );
@@ -109,7 +109,7 @@ export function RecordExternalApplication({
       <p className={wrapper}>
         <Link
           className="inline-flex items-center gap-1.5 font-semibold text-success hover:underline"
-          href="/mi-linkup/postulaciones"
+          href="/para-ti/postulaciones"
         >
           <CheckCircle2 className="size-4" aria-hidden="true" />
           Postulación registrada · Ver seguimiento
@@ -129,7 +129,7 @@ export function RecordExternalApplication({
         {loading && (
           <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
         )}
-        Regístralo en tu LinkUp
+        Regístralo en tus postulaciones
       </button>
       {error && (
         <p className="mt-1.5 font-medium text-danger" role="alert">

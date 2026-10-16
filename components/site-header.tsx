@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { Brand } from "@/components/brand";
+import { HeaderLink } from "@/components/header-link";
 import { buttonClass } from "@/components/ui/button";
 import { containerClass } from "@/components/ui/layout";
 import { cx } from "@/lib/cx";
@@ -28,32 +29,30 @@ export async function SiteHeader() {
           className="flex items-center gap-1 text-sm font-semibold sm:gap-2"
           aria-label="Navegación principal"
         >
-          <Link
-            className="rounded-full px-3 py-2 text-muted transition-colors hover:text-action"
-            href="/agregar"
-          >
-            Agregar
-          </Link>
+          {/* On phones the logo already leads to Explorar. */}
+          <HeaderLink className="max-sm:hidden" href="/" exact>
+            Explorar
+          </HeaderLink>
+          <HeaderLink href="/para-ti">Para ti</HeaderLink>
           {user ? (
-            <Link
-              className="flex items-center gap-2 rounded-full py-1 pr-1 pl-1 transition-colors hover:bg-surface sm:pr-3"
-              href="/mi-linkup"
-              aria-label={`Abrir mi LinkUp, ${user.displayName}`}
-            >
-              <span
-                className="grid size-8 place-items-center rounded-full border border-line bg-surface font-meta text-xs font-semibold text-action"
-                aria-hidden="true"
+            <>
+              <HeaderLink className="max-sm:hidden" href="/agregar">
+                Agregar
+              </HeaderLink>
+              <Link
+                className="ml-1 grid size-9 place-items-center rounded-full border border-line bg-surface font-meta text-xs font-semibold text-action transition-colors hover:border-action/40"
+                href="/para-ti/perfil"
+                aria-label={`Tu perfil, ${user.displayName}`}
               >
                 {initials(user.displayName)}
-              </span>
-              <span className="hidden sm:inline">Mi LinkUp</span>
-            </Link>
+              </Link>
+            </>
           ) : (
             <Link
               className={buttonClass({
                 variant: "secondary",
                 size: "sm",
-                className: "rounded-full",
+                className: "ml-1 rounded-full",
               })}
               href="/ingresar"
             >

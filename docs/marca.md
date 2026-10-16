@@ -15,7 +15,7 @@ El lockup es el símbolo más el wordmark en Raleway 800, armado con texto real 
 
 - La flecha de la `U` siempre apunta hacia arriba. No rotar, deformar, recolorear ni aplicar sombra.
 - Sobre azul oscuro se usa la versión blanca.
-- El lema `Connect · Grow · Succeed` va en el pie y en piezas de difusión, no en la navegación.
+- El lema `Connect · Grow · Succeed` no se usa en la app ni en `public/og.png`.
 - El símbolo actual es un redibujo fiel; se reemplaza cuando llegue el vector original (O-003).
 
 ## Paleta
@@ -65,7 +65,7 @@ Transiciones de 120–160 ms; diálogos hasta 200 ms. Sin animaciones ambientale
 Español claro y latinoamericano, voz activa, frases cortas. Nada de grandilocuencia en la interfaz.
 
 - Los títulos nombran la página o el estado ("Cómo verificamos", "Perfil"), sin punto final ni frases de póster.
-- Sin etiquetas en mayúsculas sobre los títulos de páginas públicas. En áreas privadas sí, como contexto ("Mi LinkUp", "Operación").
+- Sin etiquetas en mayúsculas sobre los títulos de páginas públicas. En áreas de operación sí, como contexto ("Operación").
 - La interfaz no justifica cada decisión: dice qué pasa y qué hacer.
 
 | Usar | Evitar |

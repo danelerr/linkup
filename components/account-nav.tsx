@@ -13,15 +13,15 @@ import {
 import { cx } from "@/lib/cx";
 
 const items = [
-  { href: "/mi-linkup", label: "Resumen", icon: Compass, exact: true },
-  { href: "/mi-linkup/guardados", label: "Guardados", icon: Bookmark },
+  { href: "/para-ti", label: "Resumen", icon: Compass, exact: true },
+  { href: "/para-ti/guardados", label: "Guardados", icon: Bookmark },
   {
-    href: "/mi-linkup/postulaciones",
+    href: "/para-ti/postulaciones",
     label: "Postulaciones",
     icon: BriefcaseBusiness,
   },
-  { href: "/mi-linkup/alertas", label: "Alertas", icon: Bell },
-  { href: "/mi-linkup/perfil", label: "Perfil", icon: UserRound },
+  { href: "/para-ti/alertas", label: "Alertas", icon: Bell },
+  { href: "/para-ti/perfil", label: "Perfil", icon: UserRound },
 ];
 
 /** Tabs that scroll sideways on phones and stack as a sidebar on desktop. */
@@ -80,7 +80,7 @@ export function SectionNav({
 
 export function AccountNav({ children }: { children?: ReactNode }) {
   return (
-    <SectionNav label="Mi LinkUp" items={items}>
+    <SectionNav label="Para ti" items={items}>
       {children}
     </SectionNav>
   );

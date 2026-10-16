@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SavedPage() {
-  const user = await requireSyncedUser("/mi-linkup/guardados");
+  const user = await requireSyncedUser("/para-ti/guardados");
   const saved = await opportunitiesWithOrganizations(
     await listSavedOpportunitySlugs(user.userId),
   );
@@ -22,9 +22,8 @@ export default async function SavedPage() {
   return (
     <div className="grid gap-8">
       <PageHeader
-        eyebrow="Mi LinkUp"
         title="Guardados"
-        description="Oportunidades que quieres revisar con calma. Las que cierran pronto aparecen marcadas."
+        description="Las que cierran pronto aparecen marcadas."
       />
       {saved.length ? (
         <ul className="border-t border-line pt-2">

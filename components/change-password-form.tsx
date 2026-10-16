@@ -101,7 +101,7 @@ export function ChangePasswordForm({
           password: newPassword,
         });
         if (signedIn.error) {
-          router.push("/ingresar?return_to=/mi-linkup/perfil");
+          router.push("/ingresar?return_to=/para-ti/perfil");
           return;
         }
         setCodeSent(false);

@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/lib/auth";
 import { signInPath } from "@/lib/navigation";
@@ -11,7 +12,8 @@ export type LinkUpUser = {
   fullName: string | null;
 };
 
-export async function getCurrentUser(): Promise<LinkUpUser | null> {
+// Cached per request: the header, layouts and pages all ask for it.
+export const getCurrentUser = cache(async (): Promise<LinkUpUser | null> => {
   const requestHeaders = await headers();
   if (!requestHeaders.get("cookie")) return null;
   const auth = await getAuth();
@@ -25,7 +27,7 @@ export async function getCurrentUser(): Promise<LinkUpUser | null> {
     email: session.user.email,
     fullName: session.user.name || null,
   };
-}
+});
 
 export async function requireCurrentUser(returnTo: string) {
   const user = await getCurrentUser();

@@ -25,7 +25,7 @@ export default async function ApplicationsPage({
 }: {
   searchParams: Promise<{ enviada?: string }>;
 }) {
-  const user = await requireSyncedUser("/mi-linkup/postulaciones");
+  const user = await requireSyncedUser("/para-ti/postulaciones");
   const params = await searchParams;
   const rows = await listApplications(user.userId);
   const listed = new Map(
@@ -38,9 +38,8 @@ export default async function ApplicationsPage({
   return (
     <div className="grid gap-8">
       <PageHeader
-        eyebrow="Mi LinkUp"
         title="Postulaciones"
-        description="Un solo lugar para recordar qué pasó y cuál es el siguiente paso."
+        description="Las que enviaste por LinkUp y las que registraste desde el sitio de cada startup."
       />
       {params.enviada === "1" && (
         <FormSuccess>

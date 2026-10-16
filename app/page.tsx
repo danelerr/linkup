@@ -5,7 +5,7 @@ import { getDirectory } from "@/lib/directory";
 import { parseFilters } from "@/lib/directory-filters";
 
 export const metadata: Metadata = {
-  title: "Descubre startups y oportunidades",
+  title: { absolute: "LinkUp | Startups y oportunidades" },
   alternates: { canonical: "/" },
 };
 

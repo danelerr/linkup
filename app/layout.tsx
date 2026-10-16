@@ -41,12 +41,12 @@ function requestOrigin(requestHeaders: Headers) {
 export async function generateMetadata(): Promise<Metadata> {
   const origin = siteOrigin(requestOrigin(await headers()));
   const description =
-    "Descubre startups, entiende qué construyen y encuentra dónde puedes sumarte.";
+    "Directorio de startups con sus empleos, pasantías y proyectos abiertos.";
   return {
     metadataBase: new URL(origin),
     title: {
-      default: "LinkUp — Startups y oportunidades",
-      template: "%s — LinkUp",
+      default: "LinkUp",
+      template: "%s | LinkUp",
     },
     description,
     icons: {
@@ -61,7 +61,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       locale: "es_419",
       siteName: "LinkUp",
-      title: "LinkUp — Descubre dónde sumarte",
+      title: "LinkUp",
       description,
       url: origin,
       images: [
@@ -69,13 +69,13 @@ export async function generateMetadata(): Promise<Metadata> {
           url: `${origin}/og.png`,
           width: 1200,
           height: 630,
-          alt: "LinkUp — Descubre dónde sumarte",
+          alt: "LinkUp",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "LinkUp — Descubre dónde sumarte",
+      title: "LinkUp",
       description,
       images: [`${origin}/og.png`],
     },

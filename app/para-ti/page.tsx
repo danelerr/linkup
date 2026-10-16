@@ -26,9 +26,9 @@ import {
   organizationForOpportunity,
   organizationNames,
 } from "@/lib/catalog";
-import { requireSyncedUser } from "@/lib/current-user";
 import { cx } from "@/lib/cx";
 import { directoryHref } from "@/lib/directory-filters";
+import { getCurrentUser, signInPath } from "@/lib/session";
 import {
   getProfile,
   listApplications,
@@ -37,15 +37,74 @@ import {
   listSavedOpportunitySlugs,
   listSavedSearches,
   profileReadiness,
+  syncUser,
 } from "@/lib/user-data";
 
 export const metadata: Metadata = {
-  title: "Mi LinkUp",
+  title: "Para ti",
   robots: { index: false, follow: false },
 };
 
-export default async function MyLinkUpPage() {
-  const user = await requireSyncedUser("/mi-linkup");
+const sections = [
+  {
+    icon: Bookmark,
+    title: "Guardados",
+    text: "Las oportunidades que quieres revisar después. Las que cierran pronto aparecen marcadas.",
+  },
+  {
+    icon: BriefcaseBusiness,
+    title: "Postulaciones",
+    text: "Las que enviaste y en qué estado está cada una.",
+  },
+  {
+    icon: Bell,
+    title: "Alertas",
+    text: "Búsquedas guardadas que te muestran las oportunidades nuevas que coinciden.",
+  },
+  {
+    icon: UserRound,
+    title: "Perfil",
+    text: "Lo que ve una startup cuando postulas. Nadie más lo ve.",
+  },
+];
+
+function SignedOut() {
+  return (
+    <div className="mx-auto max-w-[720px] pt-9 pb-24 sm:pt-16">
+      <PageHeader
+        title="Para ti"
+        description="Ingresa para usar estas secciones."
+      />
+      <ul className="mt-8 grid gap-px overflow-hidden rounded-panel border border-line bg-line sm:grid-cols-2">
+        {sections.map(({ icon: Icon, title, text }) => (
+          <li className="flex gap-3.5 bg-paper p-5" key={title}>
+            <Icon
+              className="mt-0.5 size-5 shrink-0 text-action"
+              aria-hidden="true"
+            />
+            <div>
+              <h2 className="font-semibold">{title}</h2>
+              <p className="mt-1 text-sm leading-6 text-body">{text}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+        <Link className={buttonClass()} href={signInPath("/para-ti")}>
+          Ingresar
+        </Link>
+        <p className="text-sm text-muted">
+          Si es tu primera vez, la cuenta se crea con tu correo.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default async function ForYouPage() {
+  const user = await getCurrentUser();
+  if (!user) return <SignedOut />;
+  await syncUser(user);
   const [profile, savedSlugs, applicationRows, alerts, memberships, role] =
     await Promise.all([
       getProfile(user.userId),
@@ -76,19 +135,19 @@ export default async function MyLinkUpPage() {
   });
   const summary = [
     {
-      href: "/mi-linkup/guardados",
+      href: "/para-ti/guardados",
       icon: Bookmark,
       count: savedSlugs.length,
       label: savedSlugs.length === 1 ? "guardada" : "guardadas",
     },
     {
-      href: "/mi-linkup/postulaciones",
+      href: "/para-ti/postulaciones",
       icon: BriefcaseBusiness,
       count: applicationRows.length,
       label: applicationRows.length === 1 ? "postulación" : "postulaciones",
     },
     {
-      href: "/mi-linkup/alertas",
+      href: "/para-ti/alertas",
       icon: Bell,
       count: alerts.length,
       label: alerts.length === 1 ? "alerta" : "alertas",
@@ -98,9 +157,7 @@ export default async function MyLinkUpPage() {
   return (
     <div className="grid gap-10">
       <PageHeader
-        eyebrow="Mi LinkUp"
         title={`Hola, ${firstName}.`}
-        description="Tus próximos pasos, sin llenar el perfil por llenar."
       />
 
       <section
@@ -127,10 +184,7 @@ export default async function MyLinkUpPage() {
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-meta text-xs font-semibold tracking-[0.08em] text-muted uppercase">
-            {readiness.readyToApply ? "Perfil listo" : "Siguiente paso"}
-          </p>
-          <h2 className="mt-0.5 text-lg font-semibold tracking-[-0.02em]">
+          <h2 className="text-lg font-semibold tracking-[-0.02em]">
             {readiness.readyToApply
               ? "Ya puedes postular dentro de LinkUp."
               : "Deja listo tu perfil para postular."}
@@ -147,7 +201,7 @@ export default async function MyLinkUpPage() {
                 aria-valuemin={0}
                 aria-valuemax={readiness.total}
                 aria-valuenow={readiness.complete}
-                aria-label="Señales esenciales completas"
+                aria-label="Datos esenciales completos"
               >
                 <span
                   className="block h-full rounded-full bg-action"
@@ -157,7 +211,7 @@ export default async function MyLinkUpPage() {
                 />
               </div>
               <p className="mt-2 text-sm text-body">
-                {readiness.complete} de {readiness.total} señales esenciales.
+                {readiness.complete} de {readiness.total} datos esenciales.
                 Solo compartimos una copia cuando confirmas una postulación.
               </p>
             </div>
@@ -168,7 +222,7 @@ export default async function MyLinkUpPage() {
             variant: readiness.readyToApply ? "secondary" : "primary",
             className: "sm:shrink-0",
           })}
-          href={readiness.readyToApply ? exploreHref : "/mi-linkup/perfil"}
+          href={readiness.readyToApply ? exploreHref : "/para-ti/perfil"}
         >
           {readiness.readyToApply
             ? "Explorar oportunidades"
@@ -207,7 +261,7 @@ export default async function MyLinkUpPage() {
           {recentApplication && (
             <Link
               className={cx(textLinkClass, "text-sm")}
-              href="/mi-linkup/postulaciones"
+              href="/para-ti/postulaciones"
             >
               Ver todas
             </Link>
@@ -216,7 +270,7 @@ export default async function MyLinkUpPage() {
         {recentApplication && recentOpportunity ? (
           <Link
             className="group mt-4 block rounded-panel border border-line bg-paper p-5 transition-colors hover:border-line-strong"
-            href="/mi-linkup/postulaciones"
+            href="/para-ti/postulaciones"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="min-w-0">

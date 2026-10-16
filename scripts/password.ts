@@ -7,7 +7,7 @@ import { getAuth } from "../lib/auth";
 
 // Without email configured nobody can reset a password on their own. An
 // operator runs this and hands the temporary password over in private; the
-// person then changes it in Mi LinkUp → Perfil.
+// person then changes it in Para ti → Perfil.
 const emailIndex = process.argv.indexOf("--email");
 const email = process.argv[emailIndex + 1]?.trim().toLowerCase();
 if (emailIndex === -1 || !email?.includes("@"))
@@ -49,5 +49,5 @@ await db.insert(auditEvents).values({
 await closeDb();
 
 console.log(
-  `Contraseña temporal: ${temporary}\nSe cerraron todas sus sesiones. Compártela por un canal privado y pide que la cambie en Mi LinkUp → Perfil.`,
+  `Contraseña temporal: ${temporary}\nSe cerraron todas sus sesiones. Compártela por un canal privado y pide que la cambie en Para ti → Perfil.`,
 );

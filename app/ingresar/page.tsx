@@ -17,7 +17,7 @@ export default async function SignInPage({
   searchParams: Promise<{ return_to?: string; cuenta?: string }>;
 }) {
   const params = await searchParams;
-  const returnTo = safeRelativeReturnPath(params.return_to || "/mi-linkup");
+  const returnTo = safeRelativeReturnPath(params.return_to || "/para-ti");
   if (await getCurrentUser()) redirect(returnTo);
   return (
     <main

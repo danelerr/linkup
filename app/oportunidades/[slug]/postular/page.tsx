@@ -75,7 +75,7 @@ export default async function ApplyPage({
               actions={
                 <Link
                   className={buttonClass({ variant: "secondary" })}
-                  href="/mi-linkup/postulaciones"
+                  href="/para-ti/postulaciones"
                 >
                   Ver seguimiento
                 </Link>
@@ -90,7 +90,7 @@ export default async function ApplyPage({
               actions={
                 <Link
                   className={buttonClass()}
-                  href={`/mi-linkup/perfil?return_to=${encodeURIComponent(`/oportunidades/${slug}/postular`)}`}
+                  href={`/para-ti/perfil?return_to=${encodeURIComponent(`/oportunidades/${slug}/postular`)}`}
                 >
                   Completar perfil
                 </Link>

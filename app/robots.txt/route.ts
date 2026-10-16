@@ -6,7 +6,7 @@ export function GET(request: Request) {
     "User-agent: *",
     "Allow: /",
     "Disallow: /api/",
-    "Disallow: /mi-linkup/",
+    "Disallow: /para-ti/",
     "Disallow: /organizacion/",
     "Disallow: /admin",
     `Sitemap: ${origin}/sitemap.xml`,

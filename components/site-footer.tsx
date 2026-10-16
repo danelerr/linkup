@@ -12,12 +12,7 @@ export function SiteFooter() {
           "flex flex-wrap items-center justify-between gap-x-8 gap-y-5 py-8",
         )}
       >
-        <div className="grid gap-2">
-          <Brand tone="dark" />
-          <p className="font-display text-[11px] font-semibold tracking-[0.22em] text-cyan uppercase">
-            Connect · Grow · Succeed
-          </p>
-        </div>
+        <Brand tone="dark" />
         <nav
           className="flex gap-5 text-[13px] text-on-navy-muted"
           aria-label="Información"

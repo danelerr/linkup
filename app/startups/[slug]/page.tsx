@@ -57,7 +57,7 @@ export default async function StartupDetailPage({
       : [];
   const from = safeRelativeReturnPath((await searchParams).from);
   const today = todayIso();
-  const alertHref = `/mi-linkup/alertas?q=${encodeURIComponent(organization.name)}`;
+  const alertHref = `/para-ti/alertas?q=${encodeURIComponent(organization.name)}`;
 
   return (
     <SiteShell>

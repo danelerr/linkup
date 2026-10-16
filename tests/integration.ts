@@ -97,6 +97,18 @@ try {
     401,
   );
   check("anonymous and forged-header requests cannot access private data");
+  const forYou = await fetch(`${origin}/para-ti`);
+  assert.equal(forYou.status, 200);
+  const forYouHtml = await forYou.text();
+  assert.match(forYouHtml, /Ingresa para usar estas secciones/);
+  assert.match(forYouHtml, /ingresar\?return_to=%2Fpara-ti"/);
+  assert.doesNotMatch(forYouHtml, /Cerrar sesión/);
+  // A redirect after streaming starts arrives as a refresh, not a 307.
+  assert.match(
+    await (await fetch(`${origin}/para-ti/guardados`)).text(),
+    /url=\/ingresar\?return_to=%2Fpara-ti%2Fguardados/,
+  );
+  check("Para ti explains itself without a session; its sections ask to sign in");
   const signupHtml = await (await fetch(`${origin}/ingresar?cuenta=nueva`)).text();
   const signupPassword = signupHtml.match(/<input\b[^>]*name="password"[^>]*>/)?.[0];
   assert(signupPassword);
@@ -806,7 +818,7 @@ try {
     .getSetCookie()
     .map((value) => value.split(";")[0])
     .join("; ");
-  const profileHtml = await (await fetch(`${origin}/mi-linkup/perfil`, {
+  const profileHtml = await (await fetch(`${origin}/para-ti/perfil`, {
     headers: { cookie: temporaryCookie },
   })).text();
   const newPasswordInput = profileHtml.match(/<input\b[^>]*name="newPassword"[^>]*>/)?.[0];

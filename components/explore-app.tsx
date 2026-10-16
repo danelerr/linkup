@@ -61,7 +61,7 @@ export function ExploreApp({
   const href = directoryHref({ ...filters, pagina: data.page });
   const active = filterKeys.filter((key) => filters[key]);
   const searching = Boolean(filters.q || active.length || filters.abiertas);
-  const alertHref = `/mi-linkup/alertas?${filterParams({ ...filters, pagina: 1 })}`;
+  const alertHref = `/para-ti/alertas?${filterParams({ ...filters, pagina: 1 })}`;
   const pages = Math.ceil(data.total / data.pageSize);
   const firstIdle = data.rows.findIndex((row) => row.openingCount === 0);
   const idleHeadingAt = firstIdle > 0 || data.page > 1 ? firstIdle : -1;
@@ -470,7 +470,7 @@ function CatalogPulse({ catalog }: { catalog: DirectoryPage["catalog"] }) {
   if (!catalog.startups)
     return (
       <p className="mt-4 text-base text-body sm:text-lg">
-        Startups y oportunidades, en una sola búsqueda.
+        Startups y las oportunidades que tienen abiertas.
       </p>
     );
   return (
@@ -597,13 +597,13 @@ function NoResults({
     return (
       <div className="py-16 text-center">
         <p className="text-lg font-semibold">
-          El directorio está listo para sus primeras startups.
+          Todavía no hay startups publicadas.
         </p>
         <p className="mx-auto mt-2 max-w-md text-[15px] leading-6 text-body">
-          Cada registro se revisa contra una fuente oficial antes de publicarse.
+          Si conoces una, agrégala. La revisamos antes de publicarla.
         </p>
         <Link className={buttonClass({ className: "mt-6" })} href="/agregar">
-          Agregar una startup u oportunidad
+          Agregar una startup
         </Link>
       </div>
     );
