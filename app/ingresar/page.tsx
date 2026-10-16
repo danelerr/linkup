@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { Brand } from "@/components/brand";
-import { eyebrowClass } from "@/components/ui/layout";
+import { emailEnabled } from "@/lib/email";
 import { getCurrentUser } from "@/lib/session";
 import { safeRelativeReturnPath } from "@/lib/navigation";
 
@@ -29,20 +29,10 @@ export default async function SignInPage({
     >
       <Brand />
       <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12">
-        <p className={eyebrowClass}>Tu espacio privado</p>
-        <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.04em]">
-          {newAccount
-            ? "Crea tu cuenta para continuar."
-            : "Continúa donde lo dejaste."}
-        </h1>
-        <p className="mt-2.5 text-[15px] leading-6 text-body">
-          {newAccount
-            ? "Es gratis. Con tu cuenta guardas oportunidades, creas alertas y sigues tus postulaciones. Si ya tienes una, elige Ingresar."
-            : "Guarda oportunidades, crea alertas y sigue tus postulaciones."}
-        </p>
         <AuthForm
           returnTo={returnTo}
           initialMode={newAccount ? "signup" : "signin"}
+          emailCodes={emailEnabled()}
         />
         <Link
           className="mt-6 self-center text-sm font-medium text-muted transition-colors hover:text-action"

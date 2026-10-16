@@ -35,6 +35,9 @@ const server = spawn(
       LINKUP_SEED_DEMO: "false",
       BETTER_AUTH_URL: origin,
       BETTER_AUTH_SECRET: secret,
+      // Defined but empty, so Next does not take a real key from .env.local:
+      // these scenarios run without email (integration-email.ts covers it).
+      RESEND_API_KEY: "",
     },
     stdio: ["ignore", "pipe", "pipe"],
   },
@@ -778,9 +781,15 @@ try {
   check(
     "organizations keep reviewing candidates after closing and cannot reopen withdrawn processes",
   );
+  // Run tsx through Node: node_modules/.bin/tsx is a .cmd shim on Windows.
   const resetOutput = execFileSync(
-    join("node_modules", ".bin", "tsx"),
-    ["scripts/password.ts", "--email", "talent@example.test"],
+    process.execPath,
+    [
+      "node_modules/tsx/dist/cli.mjs",
+      "scripts/password.ts",
+      "--email",
+      "talent@example.test",
+    ],
     {
       encoding: "utf8",
       env: {

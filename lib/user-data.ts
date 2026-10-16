@@ -83,7 +83,10 @@ export async function syncUser(user: LinkUpUser) {
   const existingUser = await db.query.users.findFirst({
     where: eq(users.id, user.userId),
   });
-  const displayName = user.fullName ?? existingUser?.displayName ?? user.email;
+  // Accounts created with an email code have no name until the person adds
+  // one; show the start of their email meanwhile.
+  const displayName =
+    user.fullName || existingUser?.displayName || user.email.split("@")[0];
   // Most requests find nothing to change; skip the write unless the account
   // changed or the last visit is older than the resolution we keep.
   if (

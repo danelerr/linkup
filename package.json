@@ -6,11 +6,11 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "NEXT_TELEMETRY_DISABLED=1 next dev --hostname 127.0.0.1",
-    "build": "NEXT_TELEMETRY_DISABLED=1 next build",
-    "start": "NEXT_TELEMETRY_DISABLED=1 next start --hostname 127.0.0.1",
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
     "test": "tsx --test tests/*.test.ts",
-    "test:integration": "tsx tests/integration.ts",
+    "test:integration": "tsx tests/integration.ts && tsx tests/integration-email.ts",
     "admin": "tsx scripts/admin.ts",
     "password": "tsx scripts/password.ts",
     "alerts": "tsx scripts/alerts.ts",
@@ -55,5 +55,9 @@
   "overrides": {
     "esbuild": "0.28.2"
   },
-  "type": "module"
+  "type": "module",
+  "allowScripts": {
+    "better-sqlite3": true,
+    "esbuild": true
+  }
 }
