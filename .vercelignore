@@ -1,0 +1,10 @@
+# The CLI uploads this folder on `vercel deploy`; never send local secrets,
+# data or tooling. Vercel provides the environment variables itself.
+.env*
+!.env.example
+.data
+.agents
+.claude
+skills-lock.json
+node_modules
+.next
