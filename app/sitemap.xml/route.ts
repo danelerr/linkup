@@ -1,4 +1,8 @@
-import { getOpportunities, getOrganizations } from "@/lib/catalog";
+import {
+  getOpportunities,
+  getOrganizations,
+  isOpportunityOpen,
+} from "@/lib/catalog";
 import { siteOrigin } from "@/lib/site";
 
 function escapeXml(value: string) {
@@ -25,8 +29,14 @@ export function GET(request: Request) {
     "/confianza",
     ...organizations.map((organization) => `/startups/${organization.slug}`),
     // A draft startup hides its opportunities, so their pages return 404.
+    // Closed or expired openings stay reachable but are not offered to search
+    // engines as current jobs.
     ...getOpportunities()
-      .filter((opportunity) => visible.has(opportunity.organizationSlug))
+      .filter(
+        (opportunity) =>
+          visible.has(opportunity.organizationSlug) &&
+          isOpportunityOpen(opportunity),
+      )
       .map((opportunity) => `/oportunidades/${opportunity.slug}`),
   ];
   const urls = paths

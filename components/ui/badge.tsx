@@ -11,7 +11,7 @@ const tones = {
 
 export type BadgeTone = keyof typeof tones;
 
-/** Compact state pill (docs/03: pills only for filters or short states). */
+/** Compact state pill (docs/marca.md: pills only for filters or short states). */
 export function Badge({
   tone = "neutral",
   className,

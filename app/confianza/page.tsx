@@ -39,9 +39,8 @@ export default function TrustPage() {
         <BackLink href="/">Volver a explorar</BackLink>
         <PageHeader
           className="mt-4"
-          eyebrow="Confianza"
-          title="Una fuente visible vale más que una insignia vacía."
-          description="LinkUp no afirma que una startup sea segura, rentable o un buen lugar para trabajar. Explica de dónde viene cada dato y cuándo fue revisado."
+          title="Cómo verificamos"
+          description="Mostramos de dónde viene cada dato y cuándo lo revisamos. No afirmamos que una startup sea segura, rentable o un buen lugar para trabajar."
         />
         <ol className="link-tree mt-12 grid gap-8 [--li-x:0px] [--trunk-bottom:0px] [--trunk-top:6px] [--trunk-x:11px]">
           {checks.map(({ title, text }, index) => (
@@ -67,15 +66,12 @@ export default function TrustPage() {
             aria-hidden="true"
           />
           <div>
-            <h2 className="text-base font-semibold">
-              Los ejemplos siempre se identifican.
-            </h2>
+            <h2 className="text-base font-semibold">Fichas de ejemplo</h2>
             <p className="mt-1.5 text-[15px] leading-6 text-body">
-              Si una ficha está marcada como demostrativa, sirve para probar la
-              experiencia y no es una oportunidad real. Los registros publicados
-              pasan por revisión humana y muestran su fuente y la fecha de
-              comprobación. Una revisión no garantiza que la información
-              permanezca vigente.
+              Las fichas marcadas como de ejemplo no son oportunidades reales.
+              Todo lo demás pasa por revisión humana y muestra su fuente y fecha
+              de comprobación. Aun así, una oportunidad puede cerrar después de
+              revisarla.
             </p>
           </div>
         </section>

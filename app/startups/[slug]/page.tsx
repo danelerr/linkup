@@ -121,9 +121,8 @@ export default async function StartupDetailPage({
               </Notice>
             )}
             {organization.isDemo && (
-              <Notice title="Registro demostrativo" className="mt-6">
-                Esta ficha sirve para validar la experiencia del producto; no
-                representa una empresa publicada todavía.
+              <Notice title="Startup de ejemplo" className="mt-6">
+                No es una empresa real.
               </Notice>
             )}
 
@@ -169,9 +168,7 @@ export default async function StartupDetailPage({
                       Avisarme cuando publique vacantes
                     </Link>
                   }
-                >
-                  Revisamos las fuentes oficiales de forma periódica.
-                </EmptyState>
+                />
               )}
             </section>
 

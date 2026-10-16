@@ -8,12 +8,24 @@ import { cx } from "@/lib/cx";
 export function SiteShell({
   children,
   className,
+  actionBar = false,
 }: {
   children: ReactNode;
   className?: string;
+  /**
+   * The page shows OpportunityActions, fixed to the bottom on phones. Leave
+   * room for it below the footer so it never covers the footer links.
+   */
+  actionBar?: boolean;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div
+      className={cx(
+        "flex min-h-dvh flex-col",
+        actionBar &&
+          "max-lg:pb-[calc(3.5rem_+_1px_+_max(0.75rem,env(safe-area-inset-bottom)))]",
+      )}
+    >
       <SiteHeader />
       <main
         id="main-content"

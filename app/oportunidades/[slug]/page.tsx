@@ -125,8 +125,8 @@ export default async function OpportunityDetailPage({
   );
 
   return (
-    <SiteShell>
-      <article className="pt-4 pb-32 sm:pt-8 lg:pb-24">
+    <SiteShell actionBar>
+      <article className="pt-4 pb-20 sm:pt-8 lg:pb-24">
         <BackLink href={from}>Volver al directorio</BackLink>
 
         <div className="mt-4 grid gap-10 lg:mt-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-16">
@@ -172,9 +172,8 @@ export default async function OpportunityDetailPage({
               </Notice>
             )}
             {opportunity.isDemo && (
-              <Notice title="Oportunidad demostrativa" className="mt-6">
-                No envíes información real. Este contenido existe para probar el
-                recorrido antes del piloto.
+              <Notice title="Oportunidad de ejemplo" className="mt-6">
+                No es real. No envíes datos personales.
               </Notice>
             )}
 

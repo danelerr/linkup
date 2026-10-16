@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   Bell,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Search,
@@ -64,6 +65,15 @@ export function ExploreApp({
   const pages = Math.ceil(data.total / data.pageSize);
   const firstIdle = data.rows.findIndex((row) => row.openingCount === 0);
   const idleHeadingAt = firstIdle > 0 || data.page > 1 ? firstIdle : -1;
+  // Below startups that are hiring, the ones without openings start folded
+  // into one line. Every later page holds only those, so "Siguiente" waits
+  // until they are shown. The choice resets when the search changes.
+  const [idleShownFor, setIdleShownFor] = useState("");
+  const idleCollapsed = firstIdle > 0 && idleShownFor !== href;
+  const idleTotal = data.total - data.hiring;
+  const visibleRows = idleCollapsed ? data.rows.slice(0, firstIdle) : data.rows;
+  const idleHeading = useRef<HTMLParagraphElement>(null);
+  const focusIdleHeading = useRef(false);
 
   function navigate(change: Partial<DirectoryFilters>, replace = false) {
     clearTimeout(searchTimer.current);
@@ -79,6 +89,13 @@ export function ExploreApp({
   }
   useEffect(() => () => clearTimeout(searchTimer.current), []);
   useEffect(() => {
+    // The expand button disappears; keep keyboard focus on what it revealed.
+    if (!idleCollapsed && focusIdleHeading.current) {
+      focusIdleHeading.current = false;
+      idleHeading.current?.focus();
+    }
+  }, [idleCollapsed]);
+  useEffect(() => {
     const element = dialog.current;
     if (open && element && !element.open) element.showModal();
     else if (!open && element?.open) element.close();
@@ -89,7 +106,7 @@ export function ExploreApp({
 
   return (
     <section
-      className="mx-auto w-full max-w-[1000px] pt-9 pb-20 sm:pt-16"
+      className="w-full pt-9 pb-20 sm:pt-16"
       aria-labelledby="explore-title"
     >
       <header className="max-w-3xl">
@@ -97,7 +114,7 @@ export function ExploreApp({
           id="explore-title"
           className="text-[2.125rem] leading-[1.04] font-semibold tracking-[-0.045em] text-balance sm:text-5xl lg:text-[3.5rem]"
         >
-          Encuentra dónde sumarte.
+          Encuentra dónde sumarte
         </h1>
         <CatalogPulse catalog={data.catalog} />
       </header>
@@ -358,26 +375,52 @@ export function ExploreApp({
             alertHref={alertHref}
           />
         ) : (
-          <ol>
-            {data.rows.map((row, index) => (
-              <li key={row.organization.id}>
-                {index === idleHeadingAt && (
-                  <p className="border-b border-line pt-8 pb-3 font-meta text-xs font-semibold tracking-[0.08em] text-muted uppercase">
-                    Sin vacantes abiertas ahora
-                  </p>
-                )}
-                <DirectoryRow
-                  {...row}
-                  today={data.today}
-                  entityHref={entityHref}
-                />
-              </li>
-            ))}
-          </ol>
+          <>
+            <ol>
+              {visibleRows.map((row, index) => (
+                <li key={row.organization.id}>
+                  {index === idleHeadingAt && (
+                    <p
+                      ref={idleHeading}
+                      tabIndex={-1}
+                      className="border-b border-line pt-8 pb-3 font-meta text-xs font-semibold tracking-[0.08em] text-muted uppercase"
+                    >
+                      Sin vacantes abiertas ahora
+                    </p>
+                  )}
+                  <DirectoryRow
+                    {...row}
+                    today={data.today}
+                    entityHref={entityHref}
+                  />
+                </li>
+              ))}
+            </ol>
+            {idleCollapsed && (
+              <button
+                type="button"
+                aria-expanded={false}
+                onClick={() => {
+                  focusIdleHeading.current = true;
+                  setIdleShownFor(href);
+                }}
+                className="flex min-h-14 w-full items-center justify-between gap-3 border-b border-line py-4 text-left text-[15px] text-body transition-colors hover:text-ink"
+              >
+                <span>
+                  {idleTotal} {idleTotal === 1 ? "startup" : "startups"} sin
+                  vacantes abiertas ahora
+                </span>
+                <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-action">
+                  Mostrar
+                  <ChevronDown className="size-4" aria-hidden="true" />
+                </span>
+              </button>
+            )}
+          </>
         )}
       </div>
 
-      {pages > 1 && (
+      {pages > 1 && !(idleCollapsed && data.page === 1) && (
         <nav
           className="mt-8 flex items-center justify-between gap-4 text-sm font-semibold"
           aria-label="Páginas del directorio"
@@ -393,10 +436,14 @@ export function ExploreApp({
           ) : (
             <span />
           )}
-          <span className="font-meta text-[13px] text-muted">
-            Página {data.page} de {pages}
-          </span>
-          {data.page < pages ? (
+          {idleCollapsed ? (
+            <span />
+          ) : (
+            <span className="font-meta text-[13px] text-muted">
+              Página {data.page} de {pages}
+            </span>
+          )}
+          {data.page < pages && !idleCollapsed ? (
             <Link
               className={buttonClass({ variant: "secondary", size: "sm" })}
               href={directoryHref({ ...filters, pagina: data.page + 1 })}
@@ -411,8 +458,7 @@ export function ExploreApp({
       )}
       {data.hasDemo && (
         <p className="mt-8 text-center text-xs text-muted">
-          Los registros marcados como demostrativos son ejemplos para probar
-          LinkUp.
+          Incluye startups y oportunidades de ejemplo, que no son reales.
         </p>
       )}
     </section>

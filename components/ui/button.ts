@@ -18,7 +18,7 @@ const sizes = {
   icon: "size-11 shrink-0",
 };
 
-/** Button styles for <button>, <a> and <Link> (docs/03 → Botones). */
+/** Button styles for <button>, <a> and <Link> (docs/marca.md). */
 export function buttonClass({
   variant = "primary",
   size = "md",

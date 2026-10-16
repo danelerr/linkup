@@ -1,6 +1,6 @@
 /*
  * Sistema visual de LinkUp. Los valores provienen de
- * docs/03-brand-and-interface.md; cambia primero el documento.
+ * docs/marca.md; cambia primero el documento.
  * Los componentes se estilan con utilidades de Tailwind; aquí solo viven
  * los tokens, la base y la firma visual (línea Link).
  */
@@ -19,7 +19,7 @@
   --color-canvas: #f3f5f7; /* Celeste claro */
 
   /* Derivados funcionales. La acción es el celeste intenso oscurecido para
-     llegar a 4.5:1 con texto blanco y sobre el fondo (docs/03). */
+     llegar a 4.5:1 con texto blanco y sobre el fondo (docs/marca.md). */
   --color-ink: #0f3151;
   --color-action: #0d7680;
   --color-action-hover: #0b6670;

@@ -44,16 +44,15 @@ export default async function AddPage({
         <BackLink href="/">Volver a explorar</BackLink>
         <PageHeader
           className="mt-4"
-          eyebrow="Directorio comunitario · publicación revisada"
-          title="Ayúdanos a completar el mapa."
+          title="Agregar información"
           description={
             <>
-              Cada envío queda pendiente hasta que una persona compruebe la
-              fuente.{" "}
+              Propón una startup, una vacante o una corrección. Revisamos la
+              fuente antes de publicar.{" "}
               <Link className={textLinkClass} href="/">
-                Busca antes en el directorio
+                Busca primero en el directorio
               </Link>{" "}
-              para evitar duplicados.
+              para no duplicar.
             </>
           }
         />
@@ -66,16 +65,14 @@ export default async function AddPage({
         ) : (
           <EmptyState
             className="mt-10"
-            title="Ingresa para proponer información."
+            title="Necesitas una cuenta para proponer información"
             actions={
               <Link className={buttonClass()} href={signInPath(returnTo, true)}>
                 Ingresar o crear cuenta
               </Link>
             }
           >
-            Pedimos una cuenta para saber quién envía cada startup, vacante o
-            corrección, poder consultarte si algo no se entiende y evitar envíos
-            masivos.
+            Así podemos escribirte si algo de tu propuesta no se entiende.
           </EmptyState>
         )}
       </div>

@@ -16,6 +16,8 @@ export type DirectoryResult = {
 export type DirectoryPage = {
   rows: DirectoryResult[];
   total: number;
+  /** Matching startups with at least one matching opening; they sort first. */
+  hiring: number;
   opportunityCount: number;
   page: number;
   pageSize: number;
@@ -97,6 +99,13 @@ export function getDirectory(filters: DirectoryFilters): DirectoryPage {
       )
       .get(condition.params) as { value: number }
   ).value;
+  const hiring = (
+    db
+      .prepare(
+        `SELECT count(*) value FROM catalog_organizations o WHERE ${condition.organizations} AND ${condition.hasOpenings}`,
+      )
+      .get(condition.params) as { value: number }
+  ).value;
   const page = Math.min(
     Math.max(1, Math.ceil(total / PAGE_SIZE)),
     Math.floor(filters.pagina),
@@ -161,6 +170,7 @@ export function getDirectory(filters: DirectoryFilters): DirectoryPage {
   return {
     rows,
     total,
+    hiring,
     opportunityCount: count.value,
     catalog,
     today: String(condition.params.today),
