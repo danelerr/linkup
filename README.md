@@ -2,72 +2,17 @@
 
 Estado: alfa local con catálogo editable, autenticación propia y pruebas de integración. No es un lanzamiento público. El catálogo comienza vacío; los ejemplos son una opción explícita de desarrollo.
 
-LinkUp es un directorio que reúne startups y sus oportunidades en una sola búsqueda, y ayuda al talento emergente a convertir potencial en trayectoria verificable.
+LinkUp reúne startups y sus oportunidades en una sola búsqueda y ayuda a quien tiene poca experiencia formal a conseguir la primera y demostrarla. `/` abre directamente el directorio.
 
-El producto combina dos motores inseparables:
+Hecho con Next.js, React, TypeScript, Tailwind CSS, Better Auth y SQLite con Drizzle (D-024).
 
-1. Un directorio público que agrega startups y oportunidades desde fuentes verificables.
-2. Un sistema de perfiles, postulaciones, primeras experiencias y resultados que ayuda a personas con poca experiencia formal a conseguir y demostrar su siguiente oportunidad.
+## Documentación
 
-La página principal no es una landing de marketing. Es directamente una herramienta minimalista de búsqueda y exploración.
-
-## Documentación canónica
-
-- [Definición del producto](docs/01-product-definition.md)
-- [Requisitos, flujos y alcance](docs/02-product-requirements.md)
-- [Marca y sistema de interfaz](docs/03-brand-and-interface.md)
-- [Arquitectura y modelo de datos](docs/04-architecture-and-data.md)
-- [Ingesta, búsqueda y matching](docs/05-ingestion-search-matching.md)
-- [Confianza, seguridad y privacidad](docs/06-trust-safety-privacy.md)
-- [Negocio, salida al mercado y métricas](docs/07-business-gtm-metrics.md)
-- [Roadmap y plan de ejecución](docs/08-roadmap.md)
-- [Investigación, decisiones y asuntos abiertos](docs/09-research-decisions.md)
-- [Cobertura y control de la definición](docs/10-definition-completeness.md)
-- [Alternativas de infraestructura y costos](docs/11-infraestructura-y-costos.md)
-
-## Fuentes históricas
-
-Estos antecedentes se retiraron del repositorio el 25 de septiembre de 2026 (commit `c71eab2`) y siguen disponibles en el historial de git, por ejemplo con `git show 2299452:text1.md`. No son la especificación vigente:
-
-- `Modelo Informe de proyecto (1).pdf`: propuesta presentada en Horizontes Libres.
-- `Proyecto - LinkUp.docx`: propuesta presentada en Dux Academy.
-- `text1.md`: especificaciones iniciales de un portal general de oportunidades y eventos.
-- `texto2.md`: lista inicial de productos de referencia.
-
-Si una fuente histórica contradice esta documentación, prevalece esta documentación. Si dos documentos canónicos se contradicen, prevalece, en este orden:
-
-1. Una decisión registrada como aceptada en `docs/09-research-decisions.md`.
-2. `docs/01-product-definition.md`.
-3. El documento especializado correspondiente.
-
-## Decisiones fundamentales
-
-- LinkUp será buscador y sistema de desarrollo de trayectoria; no se elige uno u otro.
-- La entrada pública será minimalista: una búsqueda, filtros y una lista que conecta cada startup con sus oportunidades.
-- Se podrá navegar y abrir una postulación externa sin cuenta; la cuenta se pedirá para guardar, crear alertas, registrar seguimiento, postular dentro de LinkUp o proponer información (D-025).
-- Habrá oportunidades indexadas con postulación externa y oportunidades con postulación gestionada dentro de la plataforma. Solo las que tengan intervención operativa real usarán `Gestionada por LinkUp`.
-- El foco inicial de empleo será para mayores de 18 años. La experiencia para menores requiere un producto y revisión legal separados.
-- El núcleo inicial son startups, vacantes, pasantías, proyectos pagados y programas que produzcan evidencia profesional.
-- No habrá feed social, conexiones, likes, cursos propios ni aplicación móvil en el MVP.
-- La IA enriquecerá datos y explicaciones; no rechazará candidatos ni será el diferenciador central.
-- La implementación actual usa Next.js estándar, React, TypeScript, Tailwind CSS, componentes propios, Morphicons, Better Auth y SQLite con Drizzle. No depende de Sites ni del acceso con ChatGPT. PostgreSQL y procesos asíncronos quedan como evolución para varias instancias; véase D-024.
-- La marca usa el monograma `lU` con flecha, la paleta azul oscuro, celeste y cian, y las tipografías Lato y Raleway (D-026), sobre una interfaz clara, sobria y de alta precisión.
-
-## Resultado que debe producir el MVP
-
-El MVP no se considera exitoso por cantidad de páginas, perfiles o visitas. Debe demostrar el circuito completo:
-
-```text
-oportunidad vigente
-    -> candidato compatible
-    -> postulación
-    -> respuesta de la organización
-    -> entrevista o experiencia
-    -> resultado verificado
-    -> perfil más valioso para la siguiente oportunidad
-```
-
-La métrica norte propuesta es la cantidad mensual de pares persona–oportunidad que alcanzan un nuevo resultado verificado: entrevista, selección/oferta, empleo o experiencia iniciada, proyecto pagado completado o programa completado con evidencia. Cada par cuenta una vez por mes con su hito más alto y el total siempre se desglosa.
+- [Producto](docs/producto.md): qué es, para quién, alcance del MVP, métrica norte, negocio y piloto.
+- [Marca e interfaz](docs/marca.md): logotipo, paleta, tipografía, layout, voz y contraste.
+- [Confianza y privacidad](docs/confianza-y-privacidad.md): qué significa cada etiqueta, qué protege la alfa y qué falta antes del piloto.
+- [Decisiones y asuntos abiertos](docs/decisiones.md): registro D-001 a D-026 y O-001 a O-015. Prevalece si otro documento lo contradice.
+- [Infraestructura y costos](docs/infraestructura-y-costos.md): opciones de alojamiento, base de datos y correo.
 
 ## Ejecutar la alfa
 
@@ -77,6 +22,8 @@ Requisitos: Node.js 22.13 o posterior.
 npm ci
 npm run dev
 ```
+
+Next.js envía telemetría anónima de uso. Para desactivarla en tu equipo, una sola vez: `npx next telemetry disable`.
 
 Comprobaciones:
 
@@ -92,10 +39,11 @@ Abre `http://localhost:3000`. Las variables opcionales están en `.env.example`;
 
 La aplicación crea `.data/linkup.sqlite` y aplica las migraciones de `drizzle/`. Better Auth crea sus tablas al primer uso. Las contraseñas se procesan con Better Auth; no se guardan en texto plano. El secreto local se genera en `.data/auth-secret` con permisos privados. No subas `.data`, secretos ni copias de datos a git.
 
-Para probar las fichas ficticias sin mezclarlas con datos reales:
+Para probar las fichas ficticias sin mezclarlas con datos reales, usa una base aparte en `.env.local` y reinicia `npm run dev`:
 
 ```bash
-LINKUP_DATABASE_PATH=.data/demo.sqlite LINKUP_SEED_DEMO=true npm run dev
+LINKUP_DATABASE_PATH=.data/demo.sqlite
+LINKUP_SEED_DEMO=true
 ```
 
 Las fechas originales se conservan: una oportunidad demostrativa vencida no aparece como activa. Desactivar el seed no borra registros ya insertados; usa una base separada.
@@ -105,7 +53,7 @@ Las fechas originales se conservan: una oportunidad demostrativa vencida no apar
 1. Crea una cuenta en `/ingresar`.
 2. Concede administración localmente a esa cuenta: `npm run admin -- --email tu@correo.com`. No hay autoasignación por email ni contraseña de administrador predefinida.
 
-   Si alguien olvida su contraseña (todavía no hay correo para recuperarla): `npm run password -- --email persona@correo.com` genera una contraseña temporal, cierra sus sesiones y deja registro. Compártela por un canal privado; la persona la cambia en Mi LinkUp → Perfil.
+   Si alguien olvida su contraseña, con correo configurado la restablece con un código desde «¿Olvidaste tu contraseña?». Sin correo: `npm run password -- --email persona@correo.com` genera una contraseña temporal, cierra sus sesiones y deja registro. Compártela por un canal privado; la persona la cambia en Mi LinkUp → Perfil.
 3. Abre `/admin/catalogo`: agrega startups y oportunidades, edita condiciones, guarda borradores o cierra registros.
 4. Los envíos de `/agregar` (requieren cuenta; hasta 5 por día y cuenta) y las importaciones CSV/JSON de `/admin/importar` llegan a `/admin`. Se publican desde el editor, después de revisar la fuente. Aprobar y publicar son una sola transacción.
 5. Una corrección se aplica al registro existente. Reclamar una startup requiere cuenta y aprobación explícita de una persona administradora; tener un correo no acredita representación.
@@ -127,7 +75,9 @@ La lista de propuestas admite hasta 100 filas / 1 MB. Columnas: `kind` (startup 
 - Las oportunidades similares requieren la misma área y nivel de experiencia, y priorizan tipo y modalidad coincidentes. No se recomiendan roles de otra área solo por ser empleos; si no hay afinidad suficiente, no se muestra esa sección.
 - Guardados, perfil, postulaciones nativas con consentimiento y copia del perfil, seguimiento externo, roles de organización, revisión de candidatos, exportación y eliminación de cuenta/sesiones.
 - Alertas con todos los filtros, máximo 20 por cuenta, sin duplicados. Las coincidencias nuevas se generan al entrar en Alertas según la frecuencia. `npm run alerts` permite ejecutarlo en un programador local, en lotes de hasta 200 búsquedas vencidas por ejecución. No se ha programado ni conectado ningún servicio.
-- **No se envían correos**: falta configurar proveedor para verificación de email, recuperación de contraseña y notificaciones por email antes de un lanzamiento abierto. Las cuentas actuales no prueban control de un correo; las reclamaciones requieren comprobación humana independiente.
+- **Correo con Resend** (D-027): con `RESEND_API_KEY` en `.env.local`, se ingresa con contraseña o con un código de 6 dígitos que llega por correo, y toda cuenta confirma su correo con un código antes de su primera sesión. Una cuenta creada con código no tiene contraseña; puede crear una en Mi LinkUp → Perfil con otro código. Restablecer la contraseña con un código cierra todas las sesiones abiertas. Sin la clave no se envía nada y solo hay contraseña, como antes.
+- **Resend sin dominio verificado** solo entrega desde `onboarding@resend.dev` y solo al correo dueño de la cuenta de Resend. Para que cualquiera reciba códigos hay que verificar un dominio en Resend (O-012) y definir `LINKUP_EMAIL_FROM`. Si Resend rechaza un correo, la terminal del servidor muestra el motivo.
+- Todavía no se envían por correo los cambios de estado de una postulación ni las alertas; siguen dentro de la app. Las reclamaciones de startups siguen requiriendo comprobación humana.
 - SQLite sirve para una instancia con disco persistente. No usar esta configuración en varias réplicas o en un hosting con disco efímero. Para ese escenario, migrar el adaptador y las consultas a PostgreSQL, revisar autorización y ejecutar estas mismas pruebas. No se promete escalabilidad ilimitada.
 - La búsqueda usa campos normalizados y filtros indexados, no IA ni ranking semántico. A gran volumen, evaluar FTS5/PostgreSQL y medir latencia. El catálogo y los campos públicos no se recopilan ni verifican solos.
 - El override de `esbuild` actualiza una dependencia transitiva antigua de la herramienta de migraciones. Se comprueba con `npm run db:generate`, además del build y tests.

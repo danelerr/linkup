@@ -72,10 +72,10 @@ La ruta `/api/cron/alerts` todavía no existe.
 
 ## 7. CV y archivos
 
-La política vigente ya lo decide:
+La política de producto ya lo decide:
 
-- El CV es **opcional**; la evidencia puede ser un enlace (TAL-002, `docs/02`).
-- Si se admiten archivos, deben ser **privados**, con rutas no predecibles y enlaces firmados de corta duración; solo PDF y hasta 5 MB (`docs/04`).
+- El CV es **opcional**; la evidencia puede ser un enlace (`docs/producto.md`).
+- Si se admiten archivos, deben ser **privados**, con rutas no predecibles y enlaces firmados de corta duración; solo PDF y hasta 5 MB.
 - Antes de guardar datos personales en proveedores de otro país, resolver la transferencia de datos (O-009).
 
 Por eso **no se recomienda** pedir enlaces públicos de Google Drive o Dropbox: cualquiera con el enlace ve el CV, y LinkUp no puede borrarlo cuando la persona elimina su cuenta.
