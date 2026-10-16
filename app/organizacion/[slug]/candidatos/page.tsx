@@ -7,7 +7,6 @@ import { EmptyState, sectionTitleClass } from "@/components/ui/layout";
 import {
   formatShortDate,
   opportunitiesForOrganization,
-  opportunityBySlug,
   organizationBySlug,
 } from "@/lib/catalog";
 import { requireOrganizationRecruiter } from "@/lib/permissions";
@@ -19,25 +18,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-function safeObject(value: string) {
-  try {
-    return JSON.parse(value) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
-}
-
-function safeAnswers(value: string) {
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === "string")
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 const factLabel =
   "font-meta text-xs font-semibold tracking-[0.08em] text-muted uppercase";
 
@@ -47,14 +27,14 @@ export default async function CandidatesPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const organization = organizationBySlug(slug);
+  const organization = await organizationBySlug(slug);
   if (!organization) notFound();
   const user = await requireOrganizationRecruiter(
     `/organizacion/${slug}/candidatos`,
     slug,
   );
   // Closed opportunities keep their candidates: reviews usually happen after closing.
-  const opportunityRows = opportunitiesForOrganization(slug, true);
+  const opportunityRows = await opportunitiesForOrganization(slug, true);
   const candidates = await listOrganizationApplications(
     slug,
     opportunityRows.map((item) => item.slug),
@@ -73,9 +53,11 @@ export default async function CandidatesPage({
       {candidates.length ? (
         <div className="grid gap-4">
           {candidates.map((candidate) => {
-            const opportunity = opportunityBySlug(candidate.opportunitySlug);
-            const profile = safeObject(candidate.profileSnapshotJson);
-            const answers = safeAnswers(candidate.answersJson).filter(Boolean);
+            const opportunity = opportunityRows.find(
+              (item) => item.slug === candidate.opportunitySlug,
+            );
+            const profile = candidate.profileSnapshot;
+            const answers = candidate.answers.filter(Boolean);
             const skills = Array.isArray(profile.skills)
               ? profile.skills.filter(
                   (item): item is string => typeof item === "string",
@@ -192,7 +174,7 @@ export default async function CandidatesPage({
                   <span className="inline-flex items-center gap-1.5">
                     <LockKeyhole className="size-3.5" aria-hidden="true" />
                     Compartido para esta postulación ·{" "}
-                    {formatShortDate(candidate.createdAt.slice(0, 10))}
+                    {formatShortDate(candidate.createdAt.toISOString().slice(0, 10))}
                   </span>
                   {typeof profile.portfolioUrl === "string" &&
                     isSafeHttpUrl(profile.portfolioUrl) && (

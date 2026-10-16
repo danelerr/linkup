@@ -1,21 +1,31 @@
-import { getSqlite } from "../db/index";
-import { ensureAuth } from "../lib/auth";
+import "./env";
+import { eq, sql } from "drizzle-orm";
+import { closeDb, getDb } from "../db/index";
+import { authUser, users } from "../db/schema";
+
 const emailIndex = process.argv.indexOf("--email");
 const email = process.argv[emailIndex + 1]?.trim().toLowerCase();
 if (emailIndex === -1 || !email?.includes("@"))
   throw new Error(
     "Uso: npm run admin -- --email tu@correo.com. Crea primero la cuenta en LinkUp.",
   );
-const db = getSqlite();
-await ensureAuth();
-const account = db
-  .prepare("SELECT id, name, email FROM auth_user WHERE lower(email) = ?")
-  .get(email) as { id: string; name: string; email: string } | undefined;
+const db = getDb();
+const [account] = await db
+  .select({ id: authUser.id, name: authUser.name, email: authUser.email })
+  .from(authUser)
+  .where(eq(sql`lower(${authUser.email})`, email));
 if (!account)
   throw new Error("No existe esa cuenta. Créala primero en /ingresar.");
-db.prepare(
-  "INSERT INTO users(id, email, display_name, role) VALUES (?, ?, ?, 'admin') ON CONFLICT(id) DO UPDATE SET role = 'admin'",
-).run(account.id, account.email, account.name);
+await db
+  .insert(users)
+  .values({
+    id: account.id,
+    email: account.email,
+    displayName: account.name || account.email.split("@")[0],
+    role: "admin",
+  })
+  .onConflictDoUpdate({ target: users.id, set: { role: "admin" } });
+await closeDb();
 console.log(
   "Acceso de administración concedido a la cuenta indicada. Abre /admin.",
 );

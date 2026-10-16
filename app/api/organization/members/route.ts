@@ -24,7 +24,7 @@ async function authorize(organizationSlug: string) {
       error: Response.json({ error: "Debes ingresar." }, { status: 401 }),
     };
   await syncUser(user);
-  if (!organizationBySlug(organizationSlug, true))
+  if (!await organizationBySlug(organizationSlug, true))
     return {
       error: Response.json(
         { error: "No encontramos esa startup." },

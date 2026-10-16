@@ -29,16 +29,15 @@ export default async function OrganizationPanelPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const organization = organizationBySlug(slug);
+  const organization = await organizationBySlug(slug);
   if (!organization) notFound();
   const user = await requireOrganizationMember(
     `/organizacion/${slug}/panel`,
     slug,
   );
-  const opportunityRows = opportunitiesForOrganization(slug);
-  const candidateOpportunitySlugs = opportunitiesForOrganization(
-    slug,
-    true,
+  const opportunityRows = await opportunitiesForOrganization(slug);
+  const candidateOpportunitySlugs = (
+    await opportunitiesForOrganization(slug, true)
   ).map((item) => item.slug);
   const [candidateCount, memberCount, canViewCandidates, perOpportunity] =
     await Promise.all([

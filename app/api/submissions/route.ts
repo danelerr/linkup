@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   await syncUser(user);
   const { company: _company, ...data } = parsed.data;
   void _company;
-  if (duplicateSubmission(data.kind, data.sourceUrl, data.organizationName))
+  if (await duplicateSubmission(data.kind, data.sourceUrl, data.organizationName))
     return NextResponse.json(
       {
         error:

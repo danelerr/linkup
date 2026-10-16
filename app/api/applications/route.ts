@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
   const parsed = createSchema.safeParse(await request.json().catch(() => null));
   const opportunity = parsed.success
-    ? opportunityBySlug(parsed.data.opportunitySlug)
+    ? await opportunityBySlug(parsed.data.opportunitySlug)
     : null;
   if (!parsed.success || !opportunity) {
     return NextResponse.json(
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   }
   if (
     !isOpportunityOpen(opportunity) ||
-    organizationForOpportunity(opportunity)?.status !== "published"
+    (await organizationForOpportunity(opportunity))?.status !== "published"
   )
     return NextResponse.json(
       { error: "Esta oportunidad ya no recibe postulaciones." },

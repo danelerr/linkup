@@ -21,7 +21,7 @@ export default async function OrganizationLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const organization = organizationBySlug(slug);
+  const organization = await organizationBySlug(slug);
   if (!organization) notFound();
   const user = await requireOrganizationMember(
     `/organizacion/${slug}/panel`,

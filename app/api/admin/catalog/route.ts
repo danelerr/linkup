@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   try {
     return Response.json({
       ok: true,
-      ...saveCatalogEntry(access.user.userId, input.data),
+      ...(await saveCatalogEntry(access.user.userId, input.data)),
     });
   } catch (error) {
     if (error instanceof CatalogError)

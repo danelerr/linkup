@@ -21,8 +21,8 @@ La evidencia de investigación (encuesta heredada, análisis competitivo y fuent
 | D-011 | Conservar el símbolo de eslabón y flecha y evolucionar a un producto sobrio. | Reemplazada en lo visual por D-026 |
 | D-012 | Listas continuas, divisores finos, casi sin sombras y un solo gesto con degradado. Sin grillas de tarjetas, paneles de estadísticas ni patrones de nodos. | Aceptada |
 | D-013 | Next.js App Router y TypeScript, no una SPA con Vite. | Aceptada |
-| D-014 | Supabase (PostgreSQL, Auth, Storage, RLS), Trigger.dev y Vercel. | Reemplazada como implementación por D-024; queda como referencia para escalar |
-| D-015 | Búsqueda con PostgreSQL FTS y `pg_trgm`, reglas explicables y curación humana. | Reemplazada como implementación por D-024 (búsqueda SQL en SQLite) |
+| D-014 | Supabase (PostgreSQL, Auth, Storage, RLS), Trigger.dev y Vercel. | Reemplazada por D-024 y D-028: PostgreSQL y Vercel sí, sin Supabase ni RLS |
+| D-015 | Búsqueda con PostgreSQL FTS y `pg_trgm`, reglas explicables y curación humana. | Pendiente: hoy la búsqueda es SQL con `LIKE` sobre texto normalizado (D-028) |
 | D-016 | La IA extrae, normaliza, sugiere y explica; no rechaza personas ni publica sin control. | Aceptada |
 | D-017 | Perfil público opcional, consentimiento por postulación, datos mínimos, exportación y eliminación. | Aceptada |
 | D-018 | Flujo laboral solo para mayores de 18. Una línea para menores sería otro producto con revisión legal. | Aceptada |
@@ -31,10 +31,11 @@ La evidencia de investigación (encuesta heredada, análisis competitivo y fuent
 | D-021 | Matching, verificación, reclamaciones y proyectos se operan a mano durante el piloto. | Aceptada |
 | D-022 | Se escribe `LinkUp`. Puede cambiar si la búsqueda de marca lo exige. | Provisional |
 | D-023 | Alfa sobre Vinext, Cloudflare D1 y acceso provisto por Sites. | Reemplazada por D-024 |
-| D-024 | Next.js estándar, Tailwind, Better Auth y SQLite con Drizzle para una instancia con disco persistente. Sin acceso con ChatGPT ni Sites. No se despliega ni se conectan servicios externos sin instrucción expresa. | Implementada (24 sep 2026) |
+| D-024 | Next.js estándar, Tailwind, Better Auth y SQLite con Drizzle para una instancia con disco persistente. Sin acceso con ChatGPT ni Sites. No se despliega ni se conectan servicios externos sin instrucción expresa. | Reemplazada en la base de datos por D-028 |
 | D-025 | Proponer información en `/agregar` requiere cuenta; hasta 5 propuestas por día y cuenta. Al conectar correo, exigir correo verificado. | Implementada (25 sep 2026) |
 | D-026 | Identidad nueva: monograma `lU`, paleta `#0F3151` / `#11909D` / `#47B9B2` / `#F3F5F7`, Lato y Raleway. Acciones en `#0D7680` para cumplir contraste. | Implementada (27 sep 2026) |
 | D-027 | Correo con Resend (API REST, sin SDK). Se ingresa con contraseña o con un código de 6 dígitos por correo; el código también crea la cuenta y permite restablecer o crear la contraseña, cerrando las sesiones abiertas. Con correo configurado, toda cuenta confirma su correo con un código antes de su primera sesión, lo que cumple la condición de D-025. Contraseña mínima de 4 caracteres, por decisión de producto. | Implementada (16 oct 2026) |
+| D-028 | PostgreSQL en Neon (São Paulo) desde el Marketplace de Vercel, con `pg` y Drizzle; las funciones de Vercel en la misma región (`gru1`). Las tablas de Better Auth son parte del esquema y todo se migra en cada build. Sin capa de compatibilidad con SQLite ni migración de datos: no había usuarios. | Implementada (16 oct 2026) |
 
 ## Asuntos abiertos
 

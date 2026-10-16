@@ -17,17 +17,19 @@
     "importar": "tsx scripts/import-catalog.ts",
     "recopilar": "tsx scripts/scrape-catalog.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
+    "@vercel/functions": "^3.10.1",
     "better-auth": "1.7.6",
-    "better-sqlite3": "^12.0.0",
     "drizzle-orm": "0.45.2",
     "lucide": "1.48.0",
     "lucide-react": "1.48.0",
     "morphicons": "1.7.1",
     "next": "16.3.6",
     "papaparse": "^5.5.3",
+    "pg": "^8.23.1",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "zod": "^4.5.4"
@@ -36,12 +38,13 @@
     "@eslint/js": "9.39.4",
     "@next/eslint-plugin-next": "16.3.6",
     "@tailwindcss/postcss": "4.2.1",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "22.19.19",
     "@types/papaparse": "^5.3.16",
+    "@types/pg": "^8.23.1",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "drizzle-kit": "0.31.10",
+    "embedded-postgres": "18.4.0-beta.17",
     "eslint": "9.39.4",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-react": "7.37.5",
@@ -57,7 +60,14 @@
   },
   "type": "module",
   "allowScripts": {
-    "better-sqlite3": true,
-    "esbuild": true
+    "esbuild": true,
+    "@embedded-postgres/darwin-arm64": true,
+    "@embedded-postgres/darwin-x64": true,
+    "@embedded-postgres/linux-arm": true,
+    "@embedded-postgres/linux-arm64": true,
+    "@embedded-postgres/linux-ia32": true,
+    "@embedded-postgres/linux-ppc64": true,
+    "@embedded-postgres/linux-x64": true,
+    "@embedded-postgres/windows-x64": true
   }
 }

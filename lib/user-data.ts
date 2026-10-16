@@ -9,11 +9,13 @@ import {
   type SQL,
 } from "drizzle-orm";
 import type { LinkUpUser } from "@/lib/session";
-import { getDb, getSqlite } from "@/db";
+import { getDb, type Transaction } from "@/db";
 import {
+  alertNotifications,
   applicationEvents,
   applications,
   auditEvents,
+  authUser,
   moderationDecisions,
   organizationMembers,
   savedOpportunities,
@@ -22,7 +24,6 @@ import {
   talentProfiles,
   users,
 } from "@/db/schema";
-import { ensureDatabase } from "@/lib/db-setup";
 import { canonicalSource } from "@/lib/catalog";
 import { normalizeText } from "@/lib/catalog-types";
 
@@ -56,33 +57,14 @@ const emptyProfile: TalentProfile = {
   acceptedTermsAt: null,
 };
 
-function safeStringArray(value: string) {
-  try {
-    const parsed: unknown = JSON.parse(value);
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === "string")
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 const LAST_SEEN_RESOLUTION = 60 * 60 * 1000;
 
-/** SQLite's CURRENT_TIMESTAMP has no "T" or zone; both forms are UTC. */
-function parseTimestamp(value: string) {
-  return Date.parse(
-    value.includes("T") ? value : `${value.replace(" ", "T")}Z`,
-  );
-}
-
 export async function syncUser(user: LinkUpUser) {
-  await ensureDatabase();
   const db = getDb();
-  const now = new Date().toISOString();
-  const existingUser = await db.query.users.findFirst({
-    where: eq(users.id, user.userId),
-  });
+  const [existingUser] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, user.userId));
   // Accounts created with an email code have no name until the person adds
   // one; show the start of their email meanwhile.
   const displayName =
@@ -93,9 +75,10 @@ export async function syncUser(user: LinkUpUser) {
     existingUser &&
     existingUser.email === user.email &&
     existingUser.displayName === displayName &&
-    Date.now() - parseTimestamp(existingUser.lastSeenAt) < LAST_SEEN_RESOLUTION
+    Date.now() - existingUser.lastSeenAt.getTime() < LAST_SEEN_RESOLUTION
   )
     return;
+  const now = new Date();
   await db
     .insert(users)
     .values({
@@ -108,12 +91,7 @@ export async function syncUser(user: LinkUpUser) {
     })
     .onConflictDoUpdate({
       target: users.id,
-      set: {
-        email: user.email,
-        displayName,
-        updatedAt: now,
-        lastSeenAt: now,
-      },
+      set: { email: user.email, displayName, updatedAt: now, lastSeenAt: now },
     });
   await db
     .insert(talentProfiles)
@@ -122,10 +100,10 @@ export async function syncUser(user: LinkUpUser) {
 }
 
 export async function getProfile(userId: string): Promise<TalentProfile> {
-  await ensureDatabase();
-  const row = await getDb().query.talentProfiles.findFirst({
-    where: eq(talentProfiles.userId, userId),
-  });
+  const [row] = await getDb()
+    .select()
+    .from(talentProfiles)
+    .where(eq(talentProfiles.userId, userId));
   if (!row) return emptyProfile;
   return {
     objective: row.objective,
@@ -133,53 +111,35 @@ export async function getProfile(userId: string): Promise<TalentProfile> {
     country: row.country,
     modality: row.modality,
     availability: row.availability,
-    skills: safeStringArray(row.skillsJson),
+    skills: row.skills,
     bio: row.bio,
     portfolioUrl: row.portfolioUrl,
     privacy: row.privacy,
     isAdult: row.isAdult,
-    acceptedTermsAt: row.acceptedTermsAt,
+    acceptedTermsAt: row.acceptedTermsAt?.toISOString() ?? null,
   };
 }
 
 export async function updateProfile(userId: string, input: ProfileInput) {
-  await ensureDatabase();
-  const now = new Date().toISOString();
-  const acceptedTermsAt = input.isAdult ? now : null;
+  const now = new Date();
+  const values = {
+    objective: input.objective,
+    city: input.city,
+    country: input.country,
+    modality: input.modality,
+    availability: input.availability,
+    skills: input.skills,
+    bio: input.bio,
+    portfolioUrl: input.portfolioUrl,
+    privacy: input.privacy,
+    isAdult: input.isAdult,
+    acceptedTermsAt: input.isAdult ? now : null,
+    updatedAt: now,
+  };
   await getDb()
     .insert(talentProfiles)
-    .values({
-      userId,
-      objective: input.objective,
-      city: input.city,
-      country: input.country,
-      modality: input.modality,
-      availability: input.availability,
-      skillsJson: JSON.stringify(input.skills),
-      bio: input.bio,
-      portfolioUrl: input.portfolioUrl,
-      privacy: input.privacy,
-      isAdult: input.isAdult,
-      acceptedTermsAt,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: talentProfiles.userId,
-      set: {
-        objective: input.objective,
-        city: input.city,
-        country: input.country,
-        modality: input.modality,
-        availability: input.availability,
-        skillsJson: JSON.stringify(input.skills),
-        bio: input.bio,
-        portfolioUrl: input.portfolioUrl,
-        privacy: input.privacy,
-        isAdult: input.isAdult,
-        acceptedTermsAt,
-        updatedAt: now,
-      },
-    });
+    .values({ userId, ...values })
+    .onConflictDoUpdate({ target: talentProfiles.userId, set: values });
   await recordAudit(userId, "profile.updated", "talent_profile", userId);
 }
 
@@ -201,7 +161,6 @@ export function profileReadiness(profile: TalentProfile) {
 }
 
 export async function listSavedOpportunitySlugs(userId: string) {
-  await ensureDatabase();
   const rows = await getDb()
     .select({ slug: savedOpportunities.opportunitySlug })
     .from(savedOpportunities)
@@ -214,14 +173,16 @@ export async function isOpportunitySaved(
   userId: string,
   opportunitySlug: string,
 ) {
-  await ensureDatabase();
-  const row = await getDb().query.savedOpportunities.findFirst({
-    where: and(
-      eq(savedOpportunities.userId, userId),
-      eq(savedOpportunities.opportunitySlug, opportunitySlug),
-    ),
-  });
-  return Boolean(row);
+  const rows = await getDb()
+    .select({ slug: savedOpportunities.opportunitySlug })
+    .from(savedOpportunities)
+    .where(
+      and(
+        eq(savedOpportunities.userId, userId),
+        eq(savedOpportunities.opportunitySlug, opportunitySlug),
+      ),
+    );
+  return rows.length > 0;
 }
 
 export async function setOpportunitySaved(
@@ -229,16 +190,15 @@ export async function setOpportunitySaved(
   opportunitySlug: string,
   save: boolean,
 ) {
-  await ensureDatabase();
   const db = getDb();
-  if (save) {
+  if (save)
     await db
       .insert(savedOpportunities)
       .values({ userId, opportunitySlug })
       .onConflictDoNothing({
         target: [savedOpportunities.userId, savedOpportunities.opportunitySlug],
       });
-  } else {
+  else
     await db
       .delete(savedOpportunities)
       .where(
@@ -247,7 +207,6 @@ export async function setOpportunitySaved(
           eq(savedOpportunities.opportunitySlug, opportunitySlug),
         ),
       );
-  }
   await recordAudit(
     userId,
     save ? "opportunity.saved" : "opportunity.unsaved",
@@ -257,7 +216,6 @@ export async function setOpportunitySaved(
 }
 
 export async function listApplications(userId: string) {
-  await ensureDatabase();
   return getDb()
     .select()
     .from(applications)
@@ -266,15 +224,14 @@ export async function listApplications(userId: string) {
 }
 
 export async function getUserRole(userId: string) {
-  await ensureDatabase();
-  const row = await getDb().query.users.findFirst({
-    where: eq(users.id, userId),
-  });
+  const [row] = await getDb()
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, userId));
   return row?.role ?? "talent";
 }
 
 export async function listOrganizationMemberships(userId: string) {
-  await ensureDatabase();
   return getDb()
     .select()
     .from(organizationMembers)
@@ -286,36 +243,30 @@ export async function listOrganizationMemberships(userId: string) {
     );
 }
 
+async function organizationMemberRole(
+  userId: string,
+  organizationSlug: string,
+) {
+  const [row] = await getDb()
+    .select({ memberRole: organizationMembers.memberRole })
+    .from(organizationMembers)
+    .where(
+      and(
+        eq(organizationMembers.userId, userId),
+        eq(organizationMembers.organizationSlug, organizationSlug),
+        eq(organizationMembers.status, "active"),
+      ),
+    );
+  return row?.memberRole ?? null;
+}
+
 export async function hasOrganizationAccess(
   userId: string,
   organizationSlug: string,
 ) {
   const role = await getUserRole(userId);
   if (role === "admin" || role === "curator") return true;
-  await ensureDatabase();
-  const row = await getDb().query.organizationMembers.findFirst({
-    where: and(
-      eq(organizationMembers.userId, userId),
-      eq(organizationMembers.organizationSlug, organizationSlug),
-      eq(organizationMembers.status, "active"),
-    ),
-  });
-  return Boolean(row);
-}
-
-async function organizationMemberRole(
-  userId: string,
-  organizationSlug: string,
-) {
-  await ensureDatabase();
-  const row = await getDb().query.organizationMembers.findFirst({
-    where: and(
-      eq(organizationMembers.userId, userId),
-      eq(organizationMembers.organizationSlug, organizationSlug),
-      eq(organizationMembers.status, "active"),
-    ),
-  });
-  return row?.memberRole ?? null;
+  return (await organizationMemberRole(userId, organizationSlug)) !== null;
 }
 
 export async function hasOrganizationCandidateAccess(
@@ -340,7 +291,6 @@ export async function hasOrganizationOwnerAccess(
 export async function countOrganizationApplications(
   opportunitySlugs: string[],
 ) {
-  await ensureDatabase();
   if (!opportunitySlugs.length) return 0;
   const [result] = await getDb()
     .select({ value: count() })
@@ -355,7 +305,6 @@ export async function countOrganizationApplications(
 }
 
 export async function countOrganizationMembers(organizationSlug: string) {
-  await ensureDatabase();
   const [result] = await getDb()
     .select({ value: count() })
     .from(organizationMembers)
@@ -369,7 +318,6 @@ export async function countOrganizationMembers(organizationSlug: string) {
 }
 
 export async function listOrganizationMembers(organizationSlug: string) {
-  await ensureDatabase();
   return getDb()
     .select({
       userId: organizationMembers.userId,
@@ -390,7 +338,6 @@ export async function listOrganizationApplications(
   opportunitySlugs: string[],
   actorId?: string,
 ) {
-  await ensureDatabase();
   if (!opportunitySlugs.length) return [];
   const rows = await getDb()
     .select({
@@ -401,8 +348,8 @@ export async function listOrganizationApplications(
       opportunitySlug: applications.opportunitySlug,
       mode: applications.mode,
       status: applications.status,
-      answersJson: applications.answersJson,
-      profileSnapshotJson: applications.profileSnapshotJson,
+      answers: applications.answers,
+      profileSnapshot: applications.profileSnapshot,
       createdAt: applications.createdAt,
       updatedAt: applications.updatedAt,
     })
@@ -439,26 +386,24 @@ function transitionApplication(
   status: string,
   note: string,
 ) {
-  const now = new Date().toISOString();
-  return getDb().transaction((tx) => {
-    const { changes } = tx
+  const now = new Date();
+  return getDb().transaction(async (tx) => {
+    const changed = await tx
       .update(applications)
       .set({ status, updatedAt: now })
       .where(
         and(scope, notInArray(applications.status, closedApplicationStatuses)),
       )
-      .run();
-    if (!changes) return false;
-    tx.insert(applicationEvents)
-      .values({
-        id: crypto.randomUUID(),
-        applicationId,
-        status,
-        actor: actorId,
-        note,
-        createdAt: now,
-      })
-      .run();
+      .returning({ id: applications.id });
+    if (!changed.length) return false;
+    await tx.insert(applicationEvents).values({
+      id: crypto.randomUUID(),
+      applicationId,
+      status,
+      actor: actorId,
+      note,
+      createdAt: now,
+    });
     return true;
   });
 }
@@ -471,9 +416,8 @@ export async function updateOrganizationApplicationStatus(
   status: string,
   note = "",
 ) {
-  await ensureDatabase();
   if (!opportunitySlugs.length) return false;
-  const updated = transitionApplication(
+  const updated = await transitionApplication(
     and(
       eq(applications.id, applicationId),
       eq(applications.mode, "native"),
@@ -490,10 +434,7 @@ export async function updateOrganizationApplicationStatus(
     "organization.application_status_updated",
     "application",
     applicationId,
-    {
-      organizationSlug,
-      status,
-    },
+    { organizationSlug, status },
   );
   return true;
 }
@@ -505,59 +446,60 @@ export async function createApplication(input: {
   answers: string[];
   profile: TalentProfile;
 }) {
-  await ensureDatabase();
   const db = getDb();
-  const existing = await db.query.applications.findFirst({
-    where: and(
-      eq(applications.userId, input.userId),
-      eq(applications.opportunitySlug, input.opportunitySlug),
-    ),
-  });
-  if (existing) return { application: existing, created: false };
-
-  const id = crypto.randomUUID();
-  const now = new Date().toISOString();
-  const application = {
-    id,
-    userId: input.userId,
-    opportunitySlug: input.opportunitySlug,
-    mode: input.mode,
-    status: "enviada",
-    answersJson: JSON.stringify(input.answers),
-    profileSnapshotJson: JSON.stringify(
-      input.mode === "native"
-        ? { ...input.profile, sharedAt: now, consent: "application" }
-        : {},
-    ),
-    createdAt: now,
-    updatedAt: now,
-  };
-  await db
+  const now = new Date();
+  const [created] = await db
     .insert(applications)
-    .values(application)
+    .values({
+      id: crypto.randomUUID(),
+      userId: input.userId,
+      opportunitySlug: input.opportunitySlug,
+      mode: input.mode,
+      status: "enviada",
+      answers: input.answers,
+      profileSnapshot:
+        input.mode === "native"
+          ? {
+              ...input.profile,
+              sharedAt: now.toISOString(),
+              consent: "application",
+            }
+          : {},
+      createdAt: now,
+      updatedAt: now,
+    })
     .onConflictDoNothing({
       target: [applications.userId, applications.opportunitySlug],
-    });
-  const stored = await db.query.applications.findFirst({
-    where: and(
-      eq(applications.userId, input.userId),
-      eq(applications.opportunitySlug, input.opportunitySlug),
-    ),
-  });
-  if (!stored) throw new Error("The application could not be persisted.");
-  if (stored.id !== id) return { application: stored, created: false };
+    })
+    .returning();
+  if (!created) {
+    const [existing] = await db
+      .select()
+      .from(applications)
+      .where(
+        and(
+          eq(applications.userId, input.userId),
+          eq(applications.opportunitySlug, input.opportunitySlug),
+        ),
+      );
+    if (!existing) throw new Error("The application could not be persisted.");
+    return { application: existing, created: false };
+  }
   await db.insert(applicationEvents).values({
     id: crypto.randomUUID(),
-    applicationId: id,
+    applicationId: created.id,
     status: "enviada",
     actor: input.userId,
     createdAt: now,
   });
-  await recordAudit(input.userId, "application.created", "application", id, {
-    opportunitySlug: input.opportunitySlug,
-    mode: input.mode,
-  });
-  return { application, created: true };
+  await recordAudit(
+    input.userId,
+    "application.created",
+    "application",
+    created.id,
+    { opportunitySlug: input.opportunitySlug, mode: input.mode },
+  );
+  return { application: created, created: true };
 }
 
 export async function updateApplicationStatus(
@@ -566,8 +508,7 @@ export async function updateApplicationStatus(
   status: string,
   note = "",
 ) {
-  await ensureDatabase();
-  const updated = transitionApplication(
+  const updated = await transitionApplication(
     and(eq(applications.id, applicationId), eq(applications.userId, userId)),
     applicationId,
     userId,
@@ -586,7 +527,6 @@ export async function updateApplicationStatus(
 }
 
 export async function listSavedSearches(userId: string) {
-  await ensureDatabase();
   return getDb()
     .select()
     .from(savedSearches)
@@ -600,26 +540,32 @@ export async function createSavedSearch(input: {
   query: Record<string, string>;
   frequency: "diaria" | "semanal";
 }) {
-  await ensureDatabase();
   const id = crypto.randomUUID();
-  await getDb()
-    .insert(savedSearches)
-    .values({
-      id,
-      userId: input.userId,
-      label: input.label,
-      queryJson: JSON.stringify(input.query),
-      frequency: input.frequency,
-    });
+  await getDb().insert(savedSearches).values({
+    id,
+    userId: input.userId,
+    label: input.label,
+    query: input.query,
+    frequency: input.frequency,
+  });
   await recordAudit(input.userId, "alert.created", "saved_search", id);
   return id;
 }
 
 export async function deleteSavedSearch(userId: string, id: string) {
-  await ensureDatabase();
-  await getDb()
-    .delete(savedSearches)
-    .where(and(eq(savedSearches.id, id), eq(savedSearches.userId, userId)));
+  await getDb().transaction(async (tx) => {
+    await tx
+      .delete(savedSearches)
+      .where(and(eq(savedSearches.id, id), eq(savedSearches.userId, userId)));
+    await tx
+      .delete(alertNotifications)
+      .where(
+        and(
+          eq(alertNotifications.searchId, id),
+          eq(alertNotifications.userId, userId),
+        ),
+      );
+  });
   await recordAudit(userId, "alert.deleted", "saved_search", id);
 }
 
@@ -633,7 +579,6 @@ export async function createSubmission(input: {
   sourceUrl: string;
   notes: string;
 }) {
-  await ensureDatabase();
   const id = crypto.randomUUID();
   await getDb()
     .insert(submissions)
@@ -657,21 +602,19 @@ export async function createSubmission(input: {
 
 /** Proposals are tied to an account; each account may send 5 per day. */
 export async function tooManyRecentSubmissions(userId: string) {
-  await ensureDatabase();
   const [result] = await getDb()
     .select({ value: count() })
     .from(submissions)
     .where(
       and(
         eq(submissions.userId, userId),
-        sql`${submissions.createdAt} >= datetime('now', '-1 day')`,
+        sql`${submissions.createdAt} >= now() - interval '1 day'`,
       ),
     );
   return (result?.value ?? 0) >= 5;
 }
 
 export async function listPendingSubmissions(actorId?: string) {
-  await ensureDatabase();
   const rows = await getDb()
     .select()
     .from(submissions)
@@ -690,8 +633,11 @@ export async function listPendingSubmissions(actorId?: string) {
 }
 
 export async function getSubmissionById(id: string) {
-  await ensureDatabase();
-  return getDb().query.submissions.findFirst({ where: eq(submissions.id, id) });
+  const [row] = await getDb()
+    .select()
+    .from(submissions)
+    .where(eq(submissions.id, id));
+  return row;
 }
 
 export async function updateSubmissionStatus(
@@ -700,7 +646,6 @@ export async function updateSubmissionStatus(
   status: string,
   reason: string,
 ) {
-  await ensureDatabase();
   if (status !== "rejected") return false;
   return decideSubmission(actorId, id, "rejected", reason);
 }
@@ -711,7 +656,6 @@ export async function approveSubmission(
   reason: string,
   organizationSlug?: string,
 ) {
-  await ensureDatabase();
   return decideSubmission(actorId, id, "approved", reason, organizationSlug);
 }
 
@@ -722,35 +666,35 @@ function decideSubmission(
   reason: string,
   organizationSlug?: string,
 ) {
-  return getDb().transaction((tx) => {
-    const submission = tx
+  return getDb().transaction(async (tx) => {
+    // Locked so two moderators cannot both decide the same proposal.
+    const [submission] = await tx
       .select()
       .from(submissions)
       .where(eq(submissions.id, id))
-      .get();
+      .for("update");
     if (!submission || submission.status !== "pending") return false;
     if (
       status === "approved" &&
       (submission.kind !== "claim" || !submission.userId || !organizationSlug)
     )
       return false;
-    const now = new Date().toISOString();
-    tx.update(submissions)
+    const now = new Date();
+    await tx
+      .update(submissions)
       .set({ status, updatedAt: now })
-      .where(eq(submissions.id, id))
-      .run();
-    tx.insert(moderationDecisions)
-      .values({
-        id: crypto.randomUUID(),
-        submissionId: id,
-        actorId,
-        status,
-        reason,
-        createdAt: now,
-      })
-      .run();
-    if (status === "approved" && submission.userId && organizationSlug) {
-      tx.insert(organizationMembers)
+      .where(eq(submissions.id, id));
+    await tx.insert(moderationDecisions).values({
+      id: crypto.randomUUID(),
+      submissionId: id,
+      actorId,
+      status,
+      reason,
+      createdAt: now,
+    });
+    if (status === "approved" && submission.userId && organizationSlug)
+      await tx
+        .insert(organizationMembers)
         .values({
           organizationSlug,
           userId: submission.userId,
@@ -765,26 +709,21 @@ function decideSubmission(
             organizationMembers.userId,
           ],
           set: { memberRole: "owner", status: "active", approvedBy: actorId },
-        })
-        .run();
-    }
-    tx.insert(auditEvents)
-      .values({
-        id: crypto.randomUUID(),
-        actorId,
-        action: `submission.${status}`,
-        entityType: "submission",
-        entityId: id,
-        detailJson: JSON.stringify({ organizationSlug, reason }),
-        createdAt: now,
-      })
-      .run();
+        });
+    await tx.insert(auditEvents).values({
+      id: crypto.randomUUID(),
+      actorId,
+      action: `submission.${status}`,
+      entityType: "submission",
+      entityId: id,
+      detail: { organizationSlug, reason },
+      createdAt: now,
+    });
     return true;
   });
 }
 
 export async function getPilotMetrics() {
-  await ensureDatabase();
   const db = getDb();
   const [
     userCount,
@@ -814,27 +753,35 @@ export async function getPilotMetrics() {
 }
 
 export async function exportUserData(userId: string) {
-  await ensureDatabase();
   const db = getDb();
   const [
-    userRecord,
-    profile,
+    [account],
+    [profile],
     saves,
     alerts,
+    notifications,
     applicationRows,
     submissionRows,
     memberships,
     audits,
   ] = await Promise.all([
-    db.query.users.findFirst({ where: eq(users.id, userId) }),
-    db.query.talentProfiles.findFirst({
-      where: eq(talentProfiles.userId, userId),
-    }),
+    db.select().from(users).where(eq(users.id, userId)),
+    db.select().from(talentProfiles).where(eq(talentProfiles.userId, userId)),
     db
       .select()
       .from(savedOpportunities)
       .where(eq(savedOpportunities.userId, userId)),
     db.select().from(savedSearches).where(eq(savedSearches.userId, userId)),
+    db
+      .select({
+        id: alertNotifications.id,
+        searchId: alertNotifications.searchId,
+        opportunitySlug: alertNotifications.opportunitySlug,
+        createdAt: alertNotifications.createdAt,
+        readAt: alertNotifications.readAt,
+      })
+      .from(alertNotifications)
+      .where(eq(alertNotifications.userId, userId)),
     db.select().from(applications).where(eq(applications.userId, userId)),
     db.select().from(submissions).where(eq(submissions.userId, userId)),
     db
@@ -852,15 +799,11 @@ export async function exportUserData(userId: string) {
     : [];
   return {
     exportedAt: new Date().toISOString(),
-    account: userRecord ?? null,
+    account: account ?? null,
     profile: profile ?? null,
     savedOpportunities: saves,
     alerts,
-    notifications: getSqlite()
-      .prepare(
-        "SELECT id,search_id,opportunity_slug,created_at,read_at FROM alert_notifications WHERE user_id=?",
-      )
-      .all(userId),
+    notifications,
     applications: applicationRows,
     applicationEvents: events,
     submissions: submissionRows,
@@ -869,79 +812,110 @@ export async function exportUserData(userId: string) {
   };
 }
 
+/**
+ * Serializes, until the transaction ends, every change that could leave a
+ * startup without an active owner: team edits and account deletions.
+ */
+async function lockOrganizationOwners(
+  tx: Transaction,
+  organizationSlug: string,
+) {
+  await tx.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtext(${`organization-owners:${organizationSlug}`}))`,
+  );
+}
+
 export async function deleteUserData(userId: string) {
-  await ensureDatabase();
-  const client = getSqlite();
   const pseudonym = `deleted:${crypto.randomUUID()}`;
-  // Reserve the write transaction before checking ownership, so concurrent
-  // account closures cannot both rely on the other owner remaining active.
-  return client.transaction(() => {
-    // Check every membership before deleting anything. A recruiter or an
-    // inactive owner cannot take over; the person must choose a new owner.
-    const organizations = client
-      .prepare(
-        `SELECT m.organization_slug AS slug,
-          COALESCE(o.name, m.organization_slug) AS name
-        FROM organization_members m
-        LEFT JOIN catalog_organizations o ON o.slug = m.organization_slug
-        WHERE m.user_id = ? AND m.member_role = 'owner' AND m.status = 'active'
-          AND NOT EXISTS (
-            SELECT 1 FROM organization_members other
-            WHERE other.organization_slug = m.organization_slug
-              AND other.user_id != m.user_id
-              AND other.member_role = 'owner' AND other.status = 'active'
-          )
-        ORDER BY name, slug`,
-      )
-      .all(userId) as { slug: string; name: string }[];
-    if (organizations.length)
-      return { deleted: false as const, organizations };
-    client
-      .prepare(
-        "DELETE FROM application_events WHERE application_id IN (SELECT id FROM applications WHERE user_id=?)",
-      )
-      .run(userId);
-    client
-      .prepare("UPDATE application_events SET actor=?, note='' WHERE actor=?")
-      .run(pseudonym, userId);
-    for (const table of [
-      "applications",
-      "saved_opportunities",
-      "saved_searches",
-      "alert_notifications",
-      "talent_profiles",
-      "organization_members",
-    ])
-      client.prepare(`DELETE FROM ${table} WHERE user_id=?`).run(userId);
-    client
-      .prepare(
-        "UPDATE organization_members SET approved_by=? WHERE approved_by=?",
-      )
-      .run(pseudonym, userId);
-    client
-      .prepare(
-        "UPDATE submissions SET user_id=NULL, contact_email='deleted@invalid.local', notes='', payload_json='{}' WHERE user_id=?",
-      )
-      .run(userId);
-    client
-      .prepare(
-        "UPDATE moderation_decisions SET actor_id=?, reason='Cuenta eliminada' WHERE actor_id=?",
-      )
-      .run(pseudonym, userId);
-    client
-      .prepare(
-        "UPDATE audit_events SET actor_id=?, detail_json='{}' WHERE actor_id=?",
-      )
-      .run(pseudonym, userId);
-    client
-      .prepare(
-        "UPDATE audit_events SET entity_id=? WHERE entity_type='talent_profile' AND entity_id=?",
-      )
-      .run(pseudonym, userId);
-    client.prepare("DELETE FROM users WHERE id=?").run(userId);
-    client.prepare("DELETE FROM auth_user WHERE id=?").run(userId);
+  return getDb().transaction(async (tx) => {
+    // Lock every startup this person belongs to before checking ownership,
+    // so two owners closing their accounts at once cannot both rely on the
+    // other remaining. Sorted, so concurrent deletions take locks in order.
+    const memberships = await tx
+      .select({ slug: organizationMembers.organizationSlug })
+      .from(organizationMembers)
+      .where(eq(organizationMembers.userId, userId))
+      .orderBy(organizationMembers.organizationSlug);
+    for (const membership of memberships)
+      await lockOrganizationOwners(tx, membership.slug);
+    // A recruiter or an inactive owner cannot take over; the person must
+    // choose a new owner first.
+    const { rows: organizations } = await tx.execute<{
+      slug: string;
+      name: string;
+    }>(sql`
+      SELECT m.organization_slug AS slug,
+        COALESCE(o.name, m.organization_slug) AS name
+      FROM organization_members m
+      LEFT JOIN catalog_organizations o ON o.slug = m.organization_slug
+      WHERE m.user_id = ${userId} AND m.member_role = 'owner'
+        AND m.status = 'active'
+        AND NOT EXISTS (
+          SELECT 1 FROM organization_members other
+          WHERE other.organization_slug = m.organization_slug
+            AND other.user_id <> m.user_id
+            AND other.member_role = 'owner' AND other.status = 'active'
+        )
+      ORDER BY name, slug`);
+    if (organizations.length) return { deleted: false as const, organizations };
+    const ownApplications = tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.userId, userId));
+    await tx
+      .delete(applicationEvents)
+      .where(inArray(applicationEvents.applicationId, ownApplications));
+    await tx
+      .update(applicationEvents)
+      .set({ actor: pseudonym, note: "" })
+      .where(eq(applicationEvents.actor, userId));
+    await tx.delete(applications).where(eq(applications.userId, userId));
+    await tx
+      .delete(savedOpportunities)
+      .where(eq(savedOpportunities.userId, userId));
+    await tx.delete(savedSearches).where(eq(savedSearches.userId, userId));
+    await tx
+      .delete(alertNotifications)
+      .where(eq(alertNotifications.userId, userId));
+    await tx.delete(talentProfiles).where(eq(talentProfiles.userId, userId));
+    await tx
+      .delete(organizationMembers)
+      .where(eq(organizationMembers.userId, userId));
+    await tx
+      .update(organizationMembers)
+      .set({ approvedBy: pseudonym })
+      .where(eq(organizationMembers.approvedBy, userId));
+    await tx
+      .update(submissions)
+      .set({
+        userId: null,
+        contactEmail: "deleted@invalid.local",
+        notes: "",
+        payload: {},
+      })
+      .where(eq(submissions.userId, userId));
+    await tx
+      .update(moderationDecisions)
+      .set({ actorId: pseudonym, reason: "Cuenta eliminada" })
+      .where(eq(moderationDecisions.actorId, userId));
+    await tx
+      .update(auditEvents)
+      .set({ actorId: pseudonym, detail: {} })
+      .where(eq(auditEvents.actorId, userId));
+    await tx
+      .update(auditEvents)
+      .set({ entityId: pseudonym })
+      .where(
+        and(
+          eq(auditEvents.entityType, "talent_profile"),
+          eq(auditEvents.entityId, userId),
+        ),
+      );
+    await tx.delete(users).where(eq(users.id, userId));
+    // Sessions and sign-in methods go with the account (ON DELETE CASCADE).
+    await tx.delete(authUser).where(eq(authUser.id, userId));
     return { deleted: true as const };
-  }).immediate();
+  });
 }
 
 async function recordAudit(
@@ -951,17 +925,14 @@ async function recordAudit(
   entityId: string,
   detail: Record<string, unknown> = {},
 ) {
-  await ensureDatabase();
-  await getDb()
-    .insert(auditEvents)
-    .values({
-      id: crypto.randomUUID(),
-      actorId,
-      action,
-      entityType,
-      entityId,
-      detailJson: JSON.stringify(detail),
-    });
+  await getDb().insert(auditEvents).values({
+    id: crypto.randomUUID(),
+    actorId,
+    action,
+    entityType,
+    entityId,
+    detail,
+  });
 }
 
 export type UserRole = "talent" | "curator" | "admin";
@@ -972,11 +943,10 @@ export type MemberRole = "owner" | "recruiter" | "viewer";
  * role or membership can be given to someone who signed up but never synced.
  */
 export async function findAccountByEmail(email: string) {
-  await ensureDatabase();
-  const account = getSqlite()
-    .prepare("SELECT id, name, email FROM auth_user WHERE lower(email) = ?")
-    .get(email.trim().toLowerCase()) as
-    { id: string; name: string; email: string } | undefined;
+  const [account] = await getDb()
+    .select({ id: authUser.id, name: authUser.name, email: authUser.email })
+    .from(authUser)
+    .where(eq(sql`lower(${authUser.email})`, email.trim().toLowerCase()));
   if (!account) return null;
   await syncUser({
     userId: account.id,
@@ -988,7 +958,6 @@ export async function findAccountByEmail(email: string) {
 }
 
 export async function listOperators() {
-  await ensureDatabase();
   return getDb()
     .select({
       userId: users.id,
@@ -1006,44 +975,36 @@ export async function setUserRole(
   userId: string,
   role: UserRole,
 ) {
-  await ensureDatabase();
-  const now = new Date().toISOString();
-  getDb().transaction((tx) => {
-    tx.update(users)
+  const now = new Date();
+  await getDb().transaction(async (tx) => {
+    await tx
+      .update(users)
       .set({ role, updatedAt: now })
-      .where(eq(users.id, userId))
-      .run();
-    tx.insert(auditEvents)
-      .values({
-        id: crypto.randomUUID(),
-        actorId,
-        action: "user.role_changed",
-        entityType: "user",
-        entityId: userId,
-        detailJson: JSON.stringify({ role }),
-        createdAt: now,
-      })
-      .run();
+      .where(eq(users.id, userId));
+    await tx.insert(auditEvents).values({
+      id: crypto.randomUUID(),
+      actorId,
+      action: "user.role_changed",
+      entityType: "user",
+      entityId: userId,
+      detail: { role },
+      createdAt: now,
+    });
   });
 }
 
-function activeOwnerCount(
-  tx: Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0],
-  organizationSlug: string,
-) {
-  return (
-    tx
-      .select({ value: count() })
-      .from(organizationMembers)
-      .where(
-        and(
-          eq(organizationMembers.organizationSlug, organizationSlug),
-          eq(organizationMembers.memberRole, "owner"),
-          eq(organizationMembers.status, "active"),
-        ),
-      )
-      .get()?.value ?? 0
-  );
+async function activeOwnerCount(tx: Transaction, organizationSlug: string) {
+  const [result] = await tx
+    .select({ value: count() })
+    .from(organizationMembers)
+    .where(
+      and(
+        eq(organizationMembers.organizationSlug, organizationSlug),
+        eq(organizationMembers.memberRole, "owner"),
+        eq(organizationMembers.status, "active"),
+      ),
+    );
+  return result?.value ?? 0;
 }
 
 /** Adds someone to a startup's team or changes their role. */
@@ -1053,10 +1014,10 @@ export async function saveOrganizationMember(
   userId: string,
   memberRole: MemberRole,
 ) {
-  await ensureDatabase();
-  const now = new Date().toISOString();
-  return getDb().transaction((tx) => {
-    const current = tx
+  const now = new Date();
+  return getDb().transaction(async (tx) => {
+    await lockOrganizationOwners(tx, organizationSlug);
+    const [current] = await tx
       .select()
       .from(organizationMembers)
       .where(
@@ -1065,16 +1026,16 @@ export async function saveOrganizationMember(
           eq(organizationMembers.userId, userId),
           eq(organizationMembers.status, "active"),
         ),
-      )
-      .get();
+      );
     // A startup always keeps someone who can manage it.
     if (
       current?.memberRole === "owner" &&
       memberRole !== "owner" &&
-      activeOwnerCount(tx, organizationSlug) <= 1
+      (await activeOwnerCount(tx, organizationSlug)) <= 1
     )
       return "last_owner" as const;
-    tx.insert(organizationMembers)
+    await tx
+      .insert(organizationMembers)
       .values({
         organizationSlug,
         userId,
@@ -1089,21 +1050,18 @@ export async function saveOrganizationMember(
           organizationMembers.userId,
         ],
         set: { memberRole, status: "active", approvedBy: actorId },
-      })
-      .run();
-    tx.insert(auditEvents)
-      .values({
-        id: crypto.randomUUID(),
-        actorId,
-        action: current
-          ? "organization.member_role_changed"
-          : "organization.member_added",
-        entityType: "organization",
-        entityId: organizationSlug,
-        detailJson: JSON.stringify({ userId, memberRole }),
-        createdAt: now,
-      })
-      .run();
+      });
+    await tx.insert(auditEvents).values({
+      id: crypto.randomUUID(),
+      actorId,
+      action: current
+        ? "organization.member_role_changed"
+        : "organization.member_added",
+      entityType: "organization",
+      entityId: organizationSlug,
+      detail: { userId, memberRole },
+      createdAt: now,
+    });
     return current ? ("updated" as const) : ("added" as const);
   });
 }
@@ -1113,10 +1071,10 @@ export async function removeOrganizationMember(
   organizationSlug: string,
   userId: string,
 ) {
-  await ensureDatabase();
-  const now = new Date().toISOString();
-  return getDb().transaction((tx) => {
-    const current = tx
+  const now = new Date();
+  return getDb().transaction(async (tx) => {
+    await lockOrganizationOwners(tx, organizationSlug);
+    const [current] = await tx
       .select()
       .from(organizationMembers)
       .where(
@@ -1124,34 +1082,31 @@ export async function removeOrganizationMember(
           eq(organizationMembers.organizationSlug, organizationSlug),
           eq(organizationMembers.userId, userId),
         ),
-      )
-      .get();
+      );
     if (!current) return "not_found" as const;
     if (
       current.memberRole === "owner" &&
       current.status === "active" &&
-      activeOwnerCount(tx, organizationSlug) <= 1
+      (await activeOwnerCount(tx, organizationSlug)) <= 1
     )
       return "last_owner" as const;
-    tx.delete(organizationMembers)
+    await tx
+      .delete(organizationMembers)
       .where(
         and(
           eq(organizationMembers.organizationSlug, organizationSlug),
           eq(organizationMembers.userId, userId),
         ),
-      )
-      .run();
-    tx.insert(auditEvents)
-      .values({
-        id: crypto.randomUUID(),
-        actorId,
-        action: "organization.member_removed",
-        entityType: "organization",
-        entityId: organizationSlug,
-        detailJson: JSON.stringify({ userId, memberRole: current.memberRole }),
-        createdAt: now,
-      })
-      .run();
+      );
+    await tx.insert(auditEvents).values({
+      id: crypto.randomUUID(),
+      actorId,
+      action: "organization.member_removed",
+      entityType: "organization",
+      entityId: organizationSlug,
+      detail: { userId, memberRole: current.memberRole },
+      createdAt: now,
+    });
     return "removed" as const;
   });
 }

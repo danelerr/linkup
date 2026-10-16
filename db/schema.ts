@@ -1,79 +1,155 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
+  boolean,
+  date,
   index,
   integer,
+  jsonb,
+  pgTable,
   primaryKey,
-  sqliteTable,
   text,
+  timestamp,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
+import type { Opportunity, Organization } from "@/lib/catalog-types";
 
-export const users = sqliteTable("users", {
+const createdAt = () =>
+  timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
+const updatedAt = () =>
+  timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
+
+// Better Auth's tables (users, sessions, sign-in methods, codes and request
+// limits). Property names are the field names Better Auth expects.
+export const authUser = pgTable("auth_user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const authSession = pgTable(
+  "auth_session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("auth_session_user_idx").on(table.userId)],
+);
+
+export const authAccount = pgTable(
+  "auth_account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", {
+      withTimezone: true,
+    }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", {
+      withTimezone: true,
+    }),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [index("auth_account_user_idx").on(table.userId)],
+);
+
+export const authVerification = pgTable(
+  "auth_verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [index("auth_verification_identifier_idx").on(table.identifier)],
+);
+
+// Request limits live in the database: on Vercel each function instance has
+// its own memory, so a limit kept there would not apply across instances.
+export const authRateLimit = pgTable("auth_rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
+
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull(),
   displayName: text("display_name").notNull(),
   role: text("role").notNull().default("talent"),
-  createdAt: text("created_at")
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text("updated_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  lastSeenAt: text("last_seen_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .defaultNow(),
 });
 
-export const talentProfiles = sqliteTable("talent_profiles", {
+export const talentProfiles = pgTable("talent_profiles", {
   userId: text("user_id").primaryKey(),
   objective: text("objective").notNull().default(""),
   city: text("city").notNull().default(""),
   country: text("country").notNull().default(""),
   modality: text("modality").notNull().default(""),
   availability: text("availability").notNull().default(""),
-  skillsJson: text("skills_json").notNull().default("[]"),
+  skills: jsonb("skills").$type<string[]>().notNull().default([]),
   bio: text("bio").notNull().default(""),
   portfolioUrl: text("portfolio_url").notNull().default(""),
   privacy: text("privacy").notNull().default("private"),
-  isAdult: integer("is_adult", { mode: "boolean" }).notNull().default(false),
-  acceptedTermsAt: text("accepted_terms_at"),
-  updatedAt: text("updated_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  isAdult: boolean("is_adult").notNull().default(false),
+  acceptedTermsAt: timestamp("accepted_terms_at", { withTimezone: true }),
+  updatedAt: updatedAt(),
 });
 
-export const savedOpportunities = sqliteTable(
+export const savedOpportunities = pgTable(
   "saved_opportunities",
   {
     userId: text("user_id").notNull(),
     opportunitySlug: text("opportunity_slug").notNull(),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: createdAt(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.opportunitySlug] })],
 );
 
-export const savedSearches = sqliteTable(
+export const savedSearches = pgTable(
   "saved_searches",
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     label: text("label").notNull(),
-    queryJson: text("query_json").notNull(),
+    query: jsonb("query").$type<Record<string, string>>().notNull(),
     frequency: text("frequency").notNull().default("semanal"),
-    active: integer("active", { mode: "boolean" }).notNull().default(true),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: text("updated_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
   },
   (table) => [index("saved_searches_user_idx").on(table.userId)],
 );
 
-export const applications = sqliteTable(
+export const applications = pgTable(
   "applications",
   {
     id: text("id").primaryKey(),
@@ -81,14 +157,13 @@ export const applications = sqliteTable(
     opportunitySlug: text("opportunity_slug").notNull(),
     mode: text("mode").notNull(),
     status: text("status").notNull().default("enviada"),
-    answersJson: text("answers_json").notNull().default("[]"),
-    profileSnapshotJson: text("profile_snapshot_json").notNull().default("{}"),
-    createdAt: text("created_at")
+    answers: jsonb("answers").$type<string[]>().notNull().default([]),
+    profileSnapshot: jsonb("profile_snapshot")
+      .$type<Record<string, unknown>>()
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: text("updated_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default({}),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
   },
   (table) => [
     uniqueIndex("applications_user_opportunity_unique").on(
@@ -99,7 +174,7 @@ export const applications = sqliteTable(
   ],
 );
 
-export const applicationEvents = sqliteTable(
+export const applicationEvents = pgTable(
   "application_events",
   {
     id: text("id").primaryKey(),
@@ -107,16 +182,14 @@ export const applicationEvents = sqliteTable(
     status: text("status").notNull(),
     actor: text("actor").notNull(),
     note: text("note").notNull().default(""),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: createdAt(),
   },
   (table) => [
     index("application_events_application_idx").on(table.applicationId),
   ],
 );
 
-export const organizationMembers = sqliteTable(
+export const organizationMembers = pgTable(
   "organization_members",
   {
     organizationSlug: text("organization_slug").notNull(),
@@ -124,9 +197,7 @@ export const organizationMembers = sqliteTable(
     memberRole: text("member_role").notNull().default("viewer"),
     status: text("status").notNull().default("active"),
     approvedBy: text("approved_by").notNull(),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: createdAt(),
   },
   (table) => [
     primaryKey({ columns: [table.organizationSlug, table.userId] }),
@@ -134,7 +205,7 @@ export const organizationMembers = sqliteTable(
   ],
 );
 
-export const submissions = sqliteTable(
+export const submissions = pgTable(
   "submissions",
   {
     id: text("id").primaryKey(),
@@ -146,16 +217,15 @@ export const submissions = sqliteTable(
     opportunityTitle: text("opportunity_title").notNull().default(""),
     sourceUrl: text("source_url").notNull(),
     notes: text("notes").notNull().default(""),
-    payloadJson: text("payload_json").notNull().default("{}"),
+    payload: jsonb("payload")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
     canonicalKey: text("canonical_key"),
     normalizedName: text("normalized_name").notNull().default(""),
     status: text("status").notNull().default("pending"),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: text("updated_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
   },
   (table) => [
     index("submissions_status_idx").on(table.status),
@@ -175,7 +245,7 @@ export const submissions = sqliteTable(
   ],
 );
 
-export const moderationDecisions = sqliteTable(
+export const moderationDecisions = pgTable(
   "moderation_decisions",
   {
     id: text("id").primaryKey(),
@@ -183,28 +253,29 @@ export const moderationDecisions = sqliteTable(
     actorId: text("actor_id").notNull(),
     status: text("status").notNull(),
     reason: text("reason").notNull(),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: createdAt(),
   },
   (table) => [
     index("moderation_decisions_submission_idx").on(table.submissionId),
   ],
 );
 
-export const auditEvents = sqliteTable("audit_events", {
+export const auditEvents = pgTable("audit_events", {
   id: text("id").primaryKey(),
   actorId: text("actor_id").notNull(),
   action: text("action").notNull(),
   entityType: text("entity_type").notNull(),
   entityId: text("entity_id").notNull(),
-  detailJson: text("detail_json").notNull().default("{}"),
-  createdAt: text("created_at")
+  detail: jsonb("detail")
+    .$type<Record<string, unknown>>()
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default({}),
+  createdAt: createdAt(),
 });
 
-export const catalogOrganizations = sqliteTable(
+// Catalog records keep the full validated document in `data`; the other
+// columns repeat the fields that search, filters and uniqueness need.
+export const catalogOrganizations = pgTable(
   "catalog_organizations",
   {
     id: text("id").primaryKey(),
@@ -214,15 +285,15 @@ export const catalogOrganizations = sqliteTable(
     websiteKey: text("website_key").unique(),
     status: text("status").notNull().default("draft"),
     searchText: text("search_text").notNull(),
-    dataJson: text("data_json").notNull(),
-    updatedAt: text("updated_at").notNull(),
+    data: jsonb("data").$type<Organization>().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     index("catalog_organizations_filter_idx").on(table.status, table.industry),
   ],
 );
 
-export const catalogOpportunities = sqliteTable(
+export const catalogOpportunities = pgTable(
   "catalog_opportunities",
   {
     id: text("id").primaryKey(),
@@ -236,12 +307,12 @@ export const catalogOpportunities = sqliteTable(
     modality: text("modality").notNull(),
     level: text("level").notNull(),
     status: text("status").notNull().default("draft"),
-    closesAt: text("closes_at"),
+    closesAt: date("closes_at", { mode: "string" }),
     sourceKey: text("source_key").unique(),
     searchText: text("search_text").notNull(),
-    dataJson: text("data_json").notNull(),
-    publishedAt: text("published_at").notNull(),
-    updatedAt: text("updated_at").notNull(),
+    data: jsonb("data").$type<Opportunity>().notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [
     index("catalog_opportunities_org_idx").on(
@@ -258,15 +329,15 @@ export const catalogOpportunities = sqliteTable(
   ],
 );
 
-export const alertNotifications = sqliteTable(
+export const alertNotifications = pgTable(
   "alert_notifications",
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     searchId: text("search_id").notNull(),
     opportunitySlug: text("opportunity_slug").notNull(),
-    createdAt: text("created_at").notNull(),
-    readAt: text("read_at"),
+    createdAt: createdAt(),
+    readAt: timestamp("read_at", { withTimezone: true }),
   },
   (table) => [
     uniqueIndex("alert_notification_unique").on(

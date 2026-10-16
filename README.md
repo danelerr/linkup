@@ -4,14 +4,14 @@ Estado: alfa local con catálogo editable, autenticación propia y pruebas de in
 
 LinkUp reúne startups y sus oportunidades en una sola búsqueda y ayuda a quien tiene poca experiencia formal a conseguir la primera y demostrarla. `/` abre directamente el directorio.
 
-Hecho con Next.js, React, TypeScript, Tailwind CSS, Better Auth y SQLite con Drizzle (D-024).
+Hecho con Next.js, React, TypeScript, Tailwind CSS, Better Auth y PostgreSQL (Neon) con Drizzle, desplegado en Vercel (D-028).
 
 ## Documentación
 
 - [Producto](docs/producto.md): qué es, para quién, alcance del MVP, métrica norte, negocio y piloto.
 - [Marca e interfaz](docs/marca.md): logotipo, paleta, tipografía, layout, voz y contraste.
 - [Confianza y privacidad](docs/confianza-y-privacidad.md): qué significa cada etiqueta, qué protege la alfa y qué falta antes del piloto.
-- [Decisiones y asuntos abiertos](docs/decisiones.md): registro D-001 a D-026 y O-001 a O-015. Prevalece si otro documento lo contradice.
+- [Decisiones y asuntos abiertos](docs/decisiones.md): registro D-001 a D-028 y O-001 a O-015. Prevalece si otro documento lo contradice.
 - [Infraestructura y costos](docs/infraestructura-y-costos.md): opciones de alojamiento, base de datos y correo.
 
 ## Ejecutar la alfa
@@ -20,8 +20,12 @@ Requisitos: Node.js 22.13 o posterior.
 
 ```bash
 npm ci
+vercel env pull .env.local   # DATABASE_URL y las demás variables del proyecto
+npm run db:migrate           # crea o actualiza las tablas
 npm run dev
 ```
+
+`vercel env pull` reemplaza `.env.local`: guarda antes cualquier variable que solo tengas ahí, o agrégala también en Vercel.
 
 Next.js envía telemetría anónima de uso. Para desactivarla en tu equipo, una sola vez: `npx next telemetry disable`.
 
@@ -35,18 +39,13 @@ npm run build
 npm run test:integration
 ```
 
-Abre `http://localhost:3000`. Las variables opcionales están en `.env.example`; para Next.js pueden guardarse en `.env.local`. Si cambias el puerto o el dominio, ajusta `BETTER_AUTH_URL` al origen exacto. Los comandos `tsx` de administración leen variables del entorno, no `.env.local`: usa el mismo `LINKUP_DATABASE_PATH` cuando trabajes con una base distinta.
+Abre `http://localhost:3000`. Las variables están explicadas en `.env.example`. Si cambias el puerto o el dominio, ajusta `BETTER_AUTH_URL` al origen exacto. Los scripts de `npm run` (admin, password, importar, alerts, recopilar, db:migrate) también leen `.env.local`; una variable ya definida en la terminal tiene prioridad.
 
-La aplicación crea `.data/linkup.sqlite` y aplica las migraciones de `drizzle/`. Better Auth crea sus tablas al primer uso. Las contraseñas se procesan con Better Auth; no se guardan en texto plano. El secreto local se genera en `.data/auth-secret` con permisos privados. No subas `.data`, secretos ni copias de datos a git.
+**Hoy desarrollo y producción usan la misma base de Neon.** Lo que hagas en local aparece en la app publicada. Mientras no haya usuarios no importa; antes del piloto conviene una rama de Neon para desarrollo.
 
-Para probar las fichas ficticias sin mezclarlas con datos reales, usa una base aparte en `.env.local` y reinicia `npm run dev`:
+El esquema vive en `db/schema.ts`, incluidas las tablas de Better Auth. Tras cambiarlo: `npm run db:generate` escribe la migración en `drizzle/` y `npm run db:migrate` la aplica. En Vercel, cada build aplica las migraciones antes de `next build` (`vercel.json`), con la conexión directa que recomienda Neon. Las contraseñas se procesan con Better Auth; no se guardan en texto plano. En local, sin `BETTER_AUTH_SECRET`, se genera `.data/auth-secret`; en Vercel es obligatorio definirlo. No subas `.data` ni secretos a git.
 
-```bash
-LINKUP_DATABASE_PATH=.data/demo.sqlite
-LINKUP_SEED_DEMO=true
-```
-
-Las fechas originales se conservan: una oportunidad demostrativa vencida no aparece como activa. Desactivar el seed no borra registros ya insertados; usa una base separada.
+Las fichas ficticias (`LINKUP_SEED_DEMO=true`) solo deben usarse con un `DATABASE_URL` aparte, nunca con la base de producción; en producción se ignoran. Las fechas originales se conservan: una oportunidad demostrativa vencida no aparece como activa.
 
 ### Operar el catálogo
 
@@ -65,7 +64,7 @@ Para cargar datos reales, `/admin/importar` → **Fichas completas** ofrece plan
 
 Las mismas plantillas se cargan desde la terminal, sin límite de filas: `npm run importar -- datos/catalogo/startups.csv datos/catalogo/vacantes.csv`. Crea borradores atribuidos a `system`, pone primero las startups y no duplica si se repite. `datos/catalogo/` contiene el catálogo inicial curado (startups bolivianas y vacantes remotas que aceptan Bolivia, con fuentes y notas de revisión en la columna `notas`, que el importador ignora).
 
-Para recopilar fuentes oficiales: `npm run recopilar` genera JSON con fichas, fuentes, hashes y avisos pendientes sin tocar la base. `npm run recopilar -- --importar` además respalda SQLite y crea borradores, sin sobrescribir ni publicar registros. Usa una selección editorial de páginas oficiales y la API pública de Ashby; no es un crawler general ni una actualización automática de avisos existentes. Véase [recopilación y límites](datos/recopilaciones/LEEME.md).
+Para recopilar fuentes oficiales: `npm run recopilar` genera JSON con fichas, fuentes, hashes y avisos pendientes sin tocar la base. `npm run recopilar -- --importar` además crea borradores, sin sobrescribir ni publicar registros. Usa una selección editorial de páginas oficiales y la API pública de Ashby; no es un crawler general ni una actualización automática de avisos existentes. Véase [recopilación y límites](datos/recopilaciones/LEEME.md).
 
 La lista de propuestas admite hasta 100 filas / 1 MB. Columnas: `kind` (startup u opportunity), `organizationName`, `sourceUrl`; las oportunidades también necesitan `opportunityTitle`. Opcionales: `websiteUrl`, `notes`, `contactEmail`. Hay vista previa y resultados por fila. La interfaz no visita los enlaces de propuestas y no hay publicación automática. Los slugs, sitios y fuentes canónicas previenen duplicados; una edición desactualizada se rechaza para no pisar cambios ajenos.
 
@@ -78,13 +77,13 @@ La lista de propuestas admite hasta 100 filas / 1 MB. Columnas: `kind` (startup 
 - **Correo con Resend** (D-027): con `RESEND_API_KEY` en `.env.local`, se ingresa con contraseña o con un código de 6 dígitos que llega por correo, y toda cuenta confirma su correo con un código antes de su primera sesión. Una cuenta creada con código no tiene contraseña; puede crear una en Mi LinkUp → Perfil con otro código. Restablecer la contraseña con un código cierra todas las sesiones abiertas. Sin la clave no se envía nada y solo hay contraseña, como antes.
 - **Resend sin dominio verificado** solo entrega desde `onboarding@resend.dev` y solo al correo dueño de la cuenta de Resend. Para que cualquiera reciba códigos hay que verificar un dominio en Resend (O-012) y definir `LINKUP_EMAIL_FROM`. Si Resend rechaza un correo, la terminal del servidor muestra el motivo.
 - Todavía no se envían por correo los cambios de estado de una postulación ni las alertas; siguen dentro de la app. Las reclamaciones de startups siguen requiriendo comprobación humana.
-- SQLite sirve para una instancia con disco persistente. No usar esta configuración en varias réplicas o en un hosting con disco efímero. Para ese escenario, migrar el adaptador y las consultas a PostgreSQL, revisar autorización y ejecutar estas mismas pruebas. No se promete escalabilidad ilimitada.
-- La búsqueda usa campos normalizados y filtros indexados, no IA ni ranking semántico. A gran volumen, evaluar FTS5/PostgreSQL y medir latencia. El catálogo y los campos públicos no se recopilan ni verifican solos.
+- La base es PostgreSQL en Neon (São Paulo) y las funciones de Vercel corren en la misma región (`gru1`). Los límites de intentos de Better Auth se guardan en la base, así valen entre todas las instancias de Vercel.
+- La búsqueda usa campos normalizados y filtros indexados, no IA ni ranking semántico. A gran volumen, evaluar la búsqueda de texto completo de PostgreSQL y medir latencia. El catálogo y los campos públicos no se recopilan ni verifican solos.
 - El override de `esbuild` actualiza una dependencia transitiva antigua de la herramienta de migraciones. Se comprueba con `npm run db:generate`, además del build y tests.
 
-Para una ejecución local de producción: `npm run build` y `npm run start`. No hay comandos ni configuración de despliegue automático.
+Para una ejecución local de producción: `npm run build` y `npm run start`.
 
-Las pruebas usan bases temporales aisladas; nunca la base del proyecto. Antes de un cambio de esquema en una base real, realiza una copia consistente con la API de backup de SQLite y comprueba su restauración. No copies solo el `.sqlite` mientras haya escrituras WAL activas.
+Las pruebas levantan su propio PostgreSQL 18 local y desechable (`embedded-postgres`, la misma versión que Neon), sin Docker ni internet, y nunca tocan la base de `.env.local`.
 
 ## Antes de publicar
 

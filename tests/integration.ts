@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { createServer } from "node:net";
-import Database from "better-sqlite3";
+import { Pool } from "pg";
 import { startup, opportunity } from "./fixtures";
+import { startTestDatabase } from "./postgres";
 
 const secret = crypto.randomUUID() + crypto.randomUUID();
-const temporary = mkdtempSync(join(tmpdir(), "linkup-integration-"));
-const database = join(temporary, "test.sqlite");
+const database = await startTestDatabase();
+const db = new Pool({ connectionString: database.url });
+const one = async <T>(text: string, values: unknown[] = []) =>
+  (await db.query(text, values)).rows[0] as T;
 const portProbe = createServer();
 await new Promise<void>((resolve) => portProbe.listen(0, "127.0.0.1", resolve));
 const address = portProbe.address();
@@ -31,7 +31,7 @@ const server = spawn(
     env: {
       ...process.env,
       NEXT_TELEMETRY_DISABLED: "1",
-      LINKUP_DATABASE_PATH: database,
+      DATABASE_URL: database.url,
       LINKUP_SEED_DEMO: "false",
       BETTER_AUTH_URL: origin,
       BETTER_AUTH_SECRET: secret,
@@ -49,7 +49,6 @@ server.stdout.on("data", (data) => {
 server.stderr.on("data", (data) => {
   logs = (logs + data.toString()).slice(-8000);
 });
-let db: Database.Database | undefined;
 let checks = 0;
 const check = (label: string) => {
   checks++;
@@ -127,10 +126,9 @@ try {
     .join("; ");
   assert(adminCookie.includes("session_token"));
   await api("/api/profile", "GET", undefined, adminCookie);
-  db = new Database(database);
-  db.prepare("UPDATE users SET role='admin' WHERE email=?").run(
+  await db.query("UPDATE users SET role='admin' WHERE email=$1", [
     "operator@example.test",
-  );
+  ]);
   check("registration accepts four lowercase characters, rejects three and matches the form");
   const wrongLogin = await api("/api/auth/sign-in/email", "POST", {
     email: "operator@example.test",
@@ -183,9 +181,10 @@ try {
   assert.equal(submitted.response.status, 201);
   assert.equal(
     (
-      db
-        .prepare("SELECT contact_email FROM submissions WHERE id=?")
-        .get(submitted.data.id) as { contact_email: string }
+      await one<{ contact_email: string }>(
+        "SELECT contact_email FROM submissions WHERE id=$1",
+        [submitted.data.id],
+      )
     ).contact_email,
     "operator@example.test",
   );
@@ -242,9 +241,10 @@ try {
   assert.equal(result.response.status, 200, JSON.stringify(result.data));
   assert.equal(
     (
-      db
-        .prepare("SELECT status FROM submissions WHERE id=?")
-        .get(submitted.data.id) as { status: string }
+      await one<{ status: string }>(
+        "SELECT status FROM submissions WHERE id=$1",
+        [submitted.data.id],
+      )
     ).status,
     "approved",
   );
@@ -447,10 +447,10 @@ try {
     409,
   );
   const saved = await api("/api/alerts", "GET", undefined, cookie);
-  assert.equal(JSON.parse(saved.data.alerts[0].queryJson).modalidad, "Remoto");
-  db.prepare(
+  assert.equal(saved.data.alerts[0].query.modalidad, "Remoto");
+  await db.query(
     "UPDATE saved_searches SET updated_at='2020-01-01', created_at='2020-01-01'",
-  ).run();
+  );
   const notified = await api("/api/alerts", "GET", undefined, cookie);
   assert.equal(notified.data.notifications.length, 2);
   assert.equal(
@@ -467,15 +467,9 @@ try {
   check(
     "saved searches retain filters and deliver deduplicated in-app notifications",
   );
-  const stored = JSON.parse(
-    (
-      db
-        .prepare(
-          "SELECT data_json FROM catalog_opportunities WHERE slug='desarrollo'",
-        )
-        .get() as { data_json: string }
-    ).data_json,
-  );
+  const { data: stored } = await one<{
+    data: { updatedAt: string; [key: string]: unknown };
+  }>("SELECT data FROM catalog_opportunities WHERE slug='desarrollo'");
   assert.equal(
     (
       await api(
@@ -615,9 +609,10 @@ try {
     adminCookie,
   );
   assert.equal(opportunitiesImport.data.results[0].status, "created");
-  const draftRow = db
-    .prepare("SELECT status FROM catalog_opportunities WHERE slug=?")
-    .get(opportunitiesImport.data.results[0].slug) as { status: string };
+  const draftRow = await one<{ status: string }>(
+    "SELECT status FROM catalog_opportunities WHERE slug=$1",
+    [opportunitiesImport.data.results[0].slug],
+  );
   assert.equal(draftRow.status, "draft");
   assert.ok(
     !(await (await fetch(origin + "/?q=Importada")).text()).includes(
@@ -719,15 +714,9 @@ try {
   check(
     "organization claims require a session, explicit admin approval and cannot be approved twice",
   );
-  const nativeStored = JSON.parse(
-    (
-      db
-        .prepare(
-          "SELECT data_json FROM catalog_opportunities WHERE slug='native'",
-        )
-        .get() as { data_json: string }
-    ).data_json,
-  );
+  const { data: nativeStored } = await one<{
+    data: { updatedAt: string; [key: string]: unknown };
+  }>("SELECT data FROM catalog_opportunities WHERE slug='native'");
   assert.equal(
     (
       await api(
@@ -751,9 +740,9 @@ try {
   );
   assert.equal(candidatesPage.status, 200);
   assert((await candidatesPage.text()).includes("Test Talent"));
-  const nativeApplication = db
-    .prepare("SELECT id FROM applications WHERE opportunity_slug='native'")
-    .get() as { id: string };
+  const nativeApplication = await one<{ id: string }>(
+    "SELECT id FROM applications WHERE opportunity_slug='native'",
+  );
   const review = (status: string) =>
     api(
       "/api/organization/applications",
@@ -794,7 +783,7 @@ try {
       encoding: "utf8",
       env: {
         ...process.env,
-        LINKUP_DATABASE_PATH: database,
+        DATABASE_URL: database.url,
         BETTER_AUTH_URL: origin,
         BETTER_AUTH_SECRET: secret,
       },
@@ -862,12 +851,12 @@ try {
   );
   const member = (method: string, body: unknown, as = cookie) =>
     api("/api/organization/members", method, body, as);
-  const operatorAccount = db
-    .prepare("SELECT id FROM auth_user WHERE email='operator@example.test'")
-    .get() as { id: string };
-  const talentAccount = db
-    .prepare("SELECT id FROM auth_user WHERE email='talent@example.test'")
-    .get() as { id: string };
+  const operatorAccount = await one<{ id: string }>(
+    "SELECT id FROM auth_user WHERE email='operator@example.test'",
+  );
+  const talentAccount = await one<{ id: string }>(
+    "SELECT id FROM auth_user WHERE email='talent@example.test'",
+  );
   const team = { organizationSlug: "estudio" };
   assert.equal(
     (
@@ -1060,18 +1049,19 @@ try {
     401,
   );
   assert.deepEqual(
-    db
-      .prepare(
-        "SELECT user_id FROM organization_members WHERE organization_slug=? AND member_role='owner' AND status='active'",
+    (
+      await db.query(
+        "SELECT user_id FROM organization_members WHERE organization_slug=$1 AND member_role='owner' AND status='active'",
+        ["estudio"],
       )
-      .all("estudio"),
+    ).rows,
     [{ user_id: operatorAccount.id }],
   );
   assert.equal(
     (
-      db.prepare("SELECT count(*) value FROM alert_notifications").get() as {
-        value: number;
-      }
+      await one<{ value: number }>(
+        "SELECT count(*)::int AS value FROM alert_notifications",
+      )
     ).value,
     0,
   );
@@ -1085,11 +1075,11 @@ try {
   console.error(logs);
   throw error;
 } finally {
-  db?.close();
+  await db.end();
   server.kill("SIGTERM");
   await new Promise<void>((resolve) => {
     if (server.exitCode !== null) resolve();
     else server.once("exit", () => resolve());
   });
-  rmSync(temporary, { recursive: true, force: true });
+  await database.stop();
 }

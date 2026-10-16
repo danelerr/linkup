@@ -1,17 +1,15 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { startup, opportunity } from "./fixtures";
+import { startTestDatabase } from "./postgres";
 import { parseFilters, directoryHref } from "../lib/directory-filters";
 import { isOpportunityOpen, normalizeText } from "../lib/catalog-types";
 import { safeRelativeReturnPath } from "../lib/navigation";
 
-const directory = mkdtempSync(join(tmpdir(), "linkup-unit-"));
-process.env.LINKUP_DATABASE_PATH = join(directory, "test.sqlite");
+const database = await startTestDatabase();
+process.env.DATABASE_URL = database.url;
 process.env.LINKUP_SEED_DEMO = "false";
-const { getSqlite } = await import("../db");
+const { closeDb, getPool } = await import("../db");
 const { saveCatalogEntry } = await import("../lib/catalog-editor");
 const {
   canonicalSource,
@@ -22,9 +20,9 @@ const {
 const { getDirectory } = await import("../lib/directory");
 const { normalizedAlertQuery, generateNotifications, listNotifications } =
   await import("../lib/alerts");
-after(() => {
-  getSqlite().close();
-  rmSync(directory, { recursive: true, force: true });
+after(async () => {
+  await closeDb();
+  await database.stop();
 });
 
 test("normalizes filters, pagination and safe return URLs", () => {
@@ -72,104 +70,121 @@ test("canonical sources strip tracking but preserve identifying query parameters
   );
 });
 
-test("catalog starts empty, publishes dynamically, searches requirements, filters and paginates", () => {
-  assert.equal(getDirectory(parseFilters({})).total, 0);
-  saveCatalogEntry("test-operator", {
+test("catalog starts empty, publishes dynamically, searches requirements, filters and paginates", async () => {
+  assert.equal((await getDirectory(parseFilters({}))).total, 0);
+  await saveCatalogEntry("test-operator", {
     kind: "startup",
     data: startup(),
     reason: "Fuente comprobada",
   });
-  saveCatalogEntry("test-operator", {
+  await saveCatalogEntry("test-operator", {
     kind: "opportunity",
     data: opportunity(),
     reason: "Fuente comprobada",
   });
-  const found = getDirectory(
+  const found = await getDirectory(
     parseFilters({ q: "Python", modalidad: "Remoto", area: "Ingeniería" }),
   );
   assert.equal(found.total, 1);
   assert.equal(found.opportunityCount, 1);
   assert.equal(found.rows[0].matchingOpportunities[0].slug, "desarrollo");
-  assert.equal(getDirectory(parseFilters({ q: "%' OR 1=1 --" })).total, 0);
   assert.equal(
-    getDirectory(parseFilters({ modalidad: "Presencial" })).total,
+    (await getDirectory(parseFilters({ q: "%' OR 1=1 --" }))).total,
+    0,
+  );
+  assert.equal(
+    (await getDirectory(parseFilters({ modalidad: "Presencial" }))).total,
     0,
   );
   for (let index = 0; index < 14; index++)
-    saveCatalogEntry("test-operator", {
+    await saveCatalogEntry("test-operator", {
       kind: "startup",
       data: startup(`equipo-${index}`),
       reason: "Prueba de paginación",
     });
-  const second = getDirectory(parseFilters({ pagina: "2" }));
+  const second = await getDirectory(parseFilters({ pagina: "2" }));
   assert.equal(second.total, 15);
   assert.equal(second.rows.length, 3);
   assert.equal(second.page, 2);
-  assert.equal(getDirectory(parseFilters({ pagina: "999" })).page, 2);
+  assert.equal((await getDirectory(parseFilters({ pagina: "999" }))).page, 2);
 });
 
-test("deduplication, optimistic edits and atomic moderation preserve previous content", () => {
-  assert.throws(
-    () =>
-      saveCatalogEntry("test", {
-        kind: "startup",
-        data: startup(),
-        reason: "Duplicado",
-      }),
+test("deduplication, optimistic edits and atomic moderation preserve previous content", async () => {
+  await assert.rejects(
+    saveCatalogEntry("test", {
+      kind: "startup",
+      data: startup(),
+      reason: "Duplicado",
+    }),
     /Ya existe/,
   );
-  assert.throws(
-    () =>
-      saveCatalogEntry("test", {
-        kind: "opportunity",
-        data: {
-          ...opportunity("otra"),
-          sourceUrl: "https://jobs.example.com/desarrollo?utm_source=x",
-        },
-        reason: "Duplicado",
-      }),
+  await assert.rejects(
+    saveCatalogEntry("test", {
+      kind: "opportunity",
+      data: {
+        ...opportunity("otra"),
+        sourceUrl: "https://jobs.example.com/desarrollo?utm_source=x",
+      },
+      reason: "Duplicado",
+    }),
     /Ya existe/,
   );
-  const existing = opportunityBySlug("desarrollo")!;
-  assert.throws(
-    () =>
-      saveCatalogEntry("test", {
-        kind: "opportunity",
-        data: { ...existing, title: "Cambio incorrecto" },
-        existingSlug: existing.slug,
-        expectedUpdatedAt: "old",
-        reason: "Desactualizado",
-      }),
+  const existing = (await opportunityBySlug("desarrollo"))!;
+  await assert.rejects(
+    saveCatalogEntry("test", {
+      kind: "opportunity",
+      data: { ...existing, title: "Cambio incorrecto" },
+      existingSlug: existing.slug,
+      expectedUpdatedAt: "old",
+      reason: "Desactualizado",
+    }),
     /Otra persona/,
   );
-  assert.equal(opportunityBySlug(existing.slug)?.title, existing.title);
-  assert.throws(
-    () =>
-      saveCatalogEntry("test", {
-        kind: "opportunity",
-        data: { ...existing, closesAt: "2020-01-01" },
-        existingSlug: existing.slug,
-        expectedUpdatedAt: existing.updatedAt,
-        reason: "Fecha pasada",
-      }),
+  assert.equal((await opportunityBySlug(existing.slug))?.title, existing.title);
+  await assert.rejects(
+    saveCatalogEntry("test", {
+      kind: "opportunity",
+      data: { ...existing, closesAt: "2020-01-01" },
+      existingSlug: existing.slug,
+      expectedUpdatedAt: existing.updatedAt,
+      reason: "Fecha pasada",
+    }),
     /ya pasó/,
   );
-  assert.throws(
-    () =>
-      saveCatalogEntry("test", {
-        kind: "startup",
-        data: startup("atomic"),
-        submissionId: crypto.randomUUID(),
-        reason: "Sin envío",
-      }),
+  await assert.rejects(
+    saveCatalogEntry("test", {
+      kind: "startup",
+      data: startup("atomic"),
+      submissionId: crypto.randomUUID(),
+      reason: "Sin envío",
+    }),
     /ya fue revisado/,
   );
-  assert.equal(organizationBySlug("atomic"), undefined);
+  assert.equal(await organizationBySlug("atomic"), undefined);
 });
 
-test("draft parent hides published children and closed offers leave active search", () => {
-  const old = opportunityBySlug("desarrollo")!;
-  saveCatalogEntry("test", {
+test("two editors saving the same version at once: one wins, the other is told to reload", async () => {
+  const current = (await organizationBySlug("equipo-13"))!;
+  const edit = (name: string) =>
+    saveCatalogEntry("test", {
+      kind: "startup",
+      data: { ...current, name },
+      existingSlug: current.slug,
+      expectedUpdatedAt: current.updatedAt,
+      reason: "Edición simultánea",
+    });
+  const results = await Promise.allSettled([edit("Primero"), edit("Segundo")]);
+  assert.equal(
+    results.filter((result) => result.status === "fulfilled").length,
+    1,
+  );
+  const rejected = results.find((result) => result.status === "rejected");
+  assert.match(String(rejected?.reason), /Otra persona/);
+});
+
+test("draft parent hides published children and closed offers leave active search", async () => {
+  const old = (await opportunityBySlug("desarrollo"))!;
+  await saveCatalogEntry("test", {
     kind: "opportunity",
     data: { ...old, status: "closed" },
     existingSlug: old.slug,
@@ -177,21 +192,21 @@ test("draft parent hides published children and closed offers leave active searc
     reason: "Cierre confirmado",
   });
   assert.equal(
-    getDirectory(parseFilters({ abiertas: "1" })).opportunityCount,
+    (await getDirectory(parseFilters({ abiertas: "1" }))).opportunityCount,
     0,
   );
-  const org = organizationBySlug("estudio")!;
-  saveCatalogEntry("test", {
+  const org = (await organizationBySlug("estudio"))!;
+  await saveCatalogEntry("test", {
     kind: "startup",
     data: { ...org, status: "draft" },
     existingSlug: org.slug,
     expectedUpdatedAt: org.updatedAt,
     reason: "Revisar startup",
   });
-  assert.equal(opportunityBySlug("desarrollo"), undefined);
+  assert.equal(await opportunityBySlug("desarrollo"), undefined);
 });
 
-test("notifications preserve every filter, select new matches and do not duplicate", () => {
+test("notifications preserve every filter, select new matches and do not duplicate", async () => {
   const query = normalizedAlertQuery({
     q: "Python",
     tipo: "Empleo",
@@ -205,54 +220,56 @@ test("notifications preserve every filter, select new matches and do not duplica
   assert.equal(Object.keys(query).length, 7);
   assert.equal(query.arbitrary, undefined);
   assert.equal(query.pagina, undefined);
-  const db = getSqlite();
-  db.prepare(
-    "INSERT INTO saved_searches(id,user_id,label,query_json,frequency,created_at,updated_at) VALUES (?,?,?,?,?,?,?)",
-  ).run(
-    "search",
-    "user",
-    "Python",
-    JSON.stringify(query),
-    "diaria",
-    "2020-01-01",
-    "2020-01-01",
+  const pool = getPool();
+  await pool.query(
+    "INSERT INTO saved_searches(id,user_id,label,query,frequency,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+    [
+      "search",
+      "user",
+      "Python",
+      JSON.stringify(query),
+      "diaria",
+      "2020-01-01",
+      "2020-01-01",
+    ],
   );
-  saveCatalogEntry("test", {
+  await saveCatalogEntry("test", {
     kind: "opportunity",
     data: opportunity("nuevo", "equipo-0"),
     reason: "Nueva vacante",
   });
-  assert.equal(generateNotifications("user"), 1);
-  assert.equal(listNotifications("user")[0].slug, "nuevo");
-  db.prepare("UPDATE saved_searches SET updated_at='2020-01-01'").run();
-  assert.equal(generateNotifications("user"), 0);
+  assert.equal(await generateNotifications("user"), 1);
+  assert.equal((await listNotifications("user"))[0].slug, "nuevo");
+  await pool.query("UPDATE saved_searches SET updated_at='2020-01-01'");
+  assert.equal(await generateNotifications("user"), 0);
 });
 
-test("startups someone can join come first, the summary ignores the search and similar roles skip the same startup", () => {
-  saveCatalogEntry("test", {
+test("startups someone can join come first, the summary ignores the search and similar roles skip the same startup", async () => {
+  await saveCatalogEntry("test", {
     kind: "opportunity",
     data: opportunity("similar", "equipo-7"),
     reason: "Otra startup",
   });
-  saveCatalogEntry("test", {
+  await saveCatalogEntry("test", {
     kind: "opportunity",
     data: opportunity("hermana", "equipo-0"),
     reason: "Misma startup",
   });
   // A–Z alone would put "equipo-1" second.
-  const page = getDirectory(parseFilters({ orden: "nombre" }));
+  const page = await getDirectory(parseFilters({ orden: "nombre" }));
   assert.deepEqual(
     page.rows.slice(0, 2).map((row) => row.organization.slug),
     ["equipo-0", "equipo-7"],
   );
+  assert.equal(page.hiring, 2);
   assert.ok(page.rows.slice(2).every((row) => row.openingCount === 0));
   assert.deepEqual(page.catalog, { startups: 14, openings: 3, newThisWeek: 3 });
   assert.deepEqual(
-    getDirectory(parseFilters({ q: "sin coincidencias" })).catalog,
+    (await getDirectory(parseFilters({ q: "sin coincidencias" }))).catalog,
     page.catalog,
   );
   assert.deepEqual(
-    similarOpportunities(opportunityBySlug("nuevo")!).map(
+    (await similarOpportunities((await opportunityBySlug("nuevo"))!)).map(
       (item) => item.opportunity.slug,
     ),
     ["similar"],
@@ -261,38 +278,46 @@ test("startups someone can join come first, the summary ignores the search and s
 
 test("visits only write the account when something changed or an hour passed", async () => {
   const { syncUser } = await import("../lib/user-data");
-  const db = getSqlite();
+  const pool = getPool();
   const person = {
     userId: "sync-user",
     displayName: "Ana",
     email: "ana@example.test",
     fullName: "Ana",
   };
-  const row = () =>
-    db
-      .prepare("SELECT display_name, last_seen_at FROM users WHERE id=?")
-      .get(person.userId) as { display_name: string; last_seen_at: string };
+  const row = async () => {
+    const { rows } = await pool.query<{
+      display_name: string;
+      last_seen_at: Date;
+    }>("SELECT display_name, last_seen_at FROM users WHERE id=$1", [
+      person.userId,
+    ]);
+    return {
+      displayName: rows[0].display_name,
+      lastSeenAt: rows[0].last_seen_at.toISOString(),
+    };
+  };
   await syncUser(person);
-  db.prepare("UPDATE users SET last_seen_at=? WHERE id=?").run(
-    new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+  await pool.query("UPDATE users SET last_seen_at=$1 WHERE id=$2", [
+    new Date(Date.now() - 5 * 60 * 1000),
     person.userId,
-  );
-  const recent = row().last_seen_at;
+  ]);
+  const recent = (await row()).lastSeenAt;
   await syncUser(person);
-  assert.equal(row().last_seen_at, recent);
+  assert.equal((await row()).lastSeenAt, recent);
   await syncUser({ ...person, fullName: "Ana María" });
-  assert.equal(row().display_name, "Ana María");
-  assert.notEqual(row().last_seen_at, recent);
-  // SQLite's CURRENT_TIMESTAMP format, two hours ago.
-  db.prepare(
-    "UPDATE users SET last_seen_at=datetime('now','-2 hours') WHERE id=?",
-  ).run(person.userId);
-  const stale = row().last_seen_at;
+  assert.equal((await row()).displayName, "Ana María");
+  assert.notEqual((await row()).lastSeenAt, recent);
+  await pool.query(
+    "UPDATE users SET last_seen_at = now() - interval '2 hours' WHERE id=$1",
+    [person.userId],
+  );
+  const stale = (await row()).lastSeenAt;
   await syncUser({ ...person, fullName: "Ana María" });
-  assert.notEqual(row().last_seen_at, stale);
+  assert.notEqual((await row()).lastSeenAt, stale);
 });
 
-test("similar opportunities require the same area and experience, not just employment type", () => {
+test("similar opportunities require the same area and experience, not just employment type", async () => {
   const roles = [
     { slug: "match-reference", area: "Ingeniería", level: "Senior" },
     { slug: "match-same", area: "Ingeniería", level: "Senior" },
@@ -324,25 +349,27 @@ test("similar opportunities require the same area and experience, not just emplo
     },
   ];
   for (const role of roles) {
-    saveCatalogEntry("test", {
+    await saveCatalogEntry("test", {
       kind: "startup",
       data: startup(role.slug),
       reason: "Prueba de afinidad",
     });
-    saveCatalogEntry("test", {
+    await saveCatalogEntry("test", {
       kind: "opportunity",
       data: { ...opportunity(role.slug, role.slug), ...role },
       reason: "Prueba de afinidad",
     });
   }
-  const reference = opportunityBySlug("match-reference")!;
+  const reference = (await opportunityBySlug("match-reference"))!;
   assert.deepEqual(
-    similarOpportunities(reference).map((item) => item.opportunity.slug),
+    (await similarOpportunities(reference)).map(
+      (item) => item.opportunity.slug,
+    ),
     ["match-same", "match-onsite", "match-project"],
   );
-  assert.equal(similarOpportunities(reference, 1).length, 1);
+  assert.equal((await similarOpportunities(reference, 1)).length, 1);
   assert.deepEqual(
-    similarOpportunities(opportunityBySlug("match-recruiting")!),
+    await similarOpportunities((await opportunityBySlug("match-recruiting"))!),
     [],
   );
 });

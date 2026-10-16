@@ -30,7 +30,7 @@ export default async function AddPage({
   const initialKind =
     kinds[params.tipo as keyof typeof kinds] ?? ("startup" as const);
   const organization = params.startup
-    ? organizationBySlug(params.startup)
+    ? await organizationBySlug(params.startup)
     : null;
   const user = await getCurrentUser();
   const returnTo = `/agregar?${new URLSearchParams(

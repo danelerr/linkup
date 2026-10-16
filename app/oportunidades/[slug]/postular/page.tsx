@@ -30,9 +30,9 @@ export default async function ApplyPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const opportunity = opportunityBySlug(slug);
+  const opportunity = await opportunityBySlug(slug);
   if (!opportunity || opportunity.applicationMode !== "native") notFound();
-  const organization = organizationForOpportunity(opportunity);
+  const organization = await organizationForOpportunity(opportunity);
   if (!organization) notFound();
   const user = await requireSyncedUser(`/oportunidades/${slug}/postular`);
   const [profile, applicationRows] = await Promise.all([

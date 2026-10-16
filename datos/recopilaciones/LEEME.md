@@ -1,8 +1,8 @@
 # Recopilación de fuentes oficiales
 
-`npm run recopilar` consulta páginas oficiales públicas y la API pública documentada de Ashby. Genera una carpeta fechada con `startups.json`, `vacantes.json`, `revision-pendiente.json` y `fuentes.json`. No toca SQLite por defecto.
+`npm run recopilar` consulta páginas oficiales públicas y la API pública documentada de Ashby. Genera una carpeta fechada con `startups.json`, `vacantes.json`, `revision-pendiente.json` y `fuentes.json`. No toca la base por defecto.
 
-`npm run recopilar -- --importar` hace la misma captura, respalda de forma consistente la base existente en `.data/backups/` y crea **borradores** mediante el importador del catálogo. Repetirlo omite duplicados; no sobrescribe publicaciones, ediciones o registros cerrados. Los comandos `tsx` usan variables de entorno, no `.env.local`: establece `LINKUP_DATABASE_PATH` si la app utiliza otra base.
+`npm run recopilar -- --importar` hace la misma captura y crea **borradores** mediante el importador del catálogo, en la base de `DATABASE_URL` (`.env.local`). Repetirlo omite duplicados; no sobrescribe publicaciones, ediciones o registros cerrados.
 
 Revisa y publica desde `/admin/catalogo`; publicar una vacante requiere que su startup también esté publicada. La fecha de comprobación indica acceso a la fuente, no una relación con la empresa ni garantía de elegibilidad. No hay despliegue, cron ni publicación automática.
 

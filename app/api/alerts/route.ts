@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/session";
-import { normalizedAlertQuery, listNotifications } from "@/lib/alerts";
-import { getSqlite } from "@/db";
+import {
+  listNotifications,
+  markNotificationsRead,
+  normalizedAlertQuery,
+} from "@/lib/alerts";
 import {
   createSavedSearch,
   deleteSavedSearch,
@@ -27,7 +30,7 @@ export async function GET() {
   await syncUser(user);
   return NextResponse.json({
     alerts: await listSavedSearches(user.userId),
-    notifications: listNotifications(user.userId),
+    notifications: await listNotifications(user.userId),
   });
 }
 
@@ -47,7 +50,7 @@ export async function POST(request: Request) {
   if (
     existing.some(
       (row) =>
-        JSON.stringify(normalizedAlertQuery(JSON.parse(row.queryJson))) ===
+        JSON.stringify(normalizedAlertQuery(row.query)) ===
         JSON.stringify(query),
     )
   )
@@ -80,9 +83,6 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Alerta inválida." }, { status: 400 });
   await syncUser(user);
   await deleteSavedSearch(user.userId, parsed.data.id);
-  getSqlite()
-    .prepare("DELETE FROM alert_notifications WHERE search_id=? AND user_id=?")
-    .run(parsed.data.id, user.userId);
   return NextResponse.json({ ok: true });
 }
 
@@ -90,10 +90,6 @@ export async function PATCH() {
   const user = await getCurrentUser();
   if (!user)
     return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
-  getSqlite()
-    .prepare(
-      "UPDATE alert_notifications SET read_at=? WHERE user_id=? AND read_at IS NULL",
-    )
-    .run(new Date().toISOString(), user.userId);
+  await markNotificationsRead(user.userId);
   return NextResponse.json({ ok: true });
 }

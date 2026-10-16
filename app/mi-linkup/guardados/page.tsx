@@ -3,7 +3,7 @@ import Link from "next/link";
 import { OpeningRow } from "@/components/opening-row";
 import { textLinkClass } from "@/components/ui/button";
 import { EmptyState, PageHeader } from "@/components/ui/layout";
-import { opportunityBySlug, organizationForOpportunity } from "@/lib/catalog";
+import { opportunitiesWithOrganizations } from "@/lib/catalog";
 import { requireSyncedUser } from "@/lib/current-user";
 import { todayIso } from "@/lib/dates";
 import { listSavedOpportunitySlugs } from "@/lib/user-data";
@@ -15,10 +15,9 @@ export const metadata: Metadata = {
 
 export default async function SavedPage() {
   const user = await requireSyncedUser("/mi-linkup/guardados");
-  const slugs = await listSavedOpportunitySlugs(user.userId);
-  const saved = slugs
-    .map((slug) => opportunityBySlug(slug))
-    .filter((item) => item !== undefined);
+  const saved = await opportunitiesWithOrganizations(
+    await listSavedOpportunitySlugs(user.userId),
+  );
   const today = todayIso();
   return (
     <div className="grid gap-8">
@@ -29,11 +28,11 @@ export default async function SavedPage() {
       />
       {saved.length ? (
         <ul className="border-t border-line pt-2">
-          {saved.map((opportunity) => (
+          {saved.map(({ opportunity, organization }) => (
             <li key={opportunity.id} className="border-b border-line py-1">
               <OpeningRow
                 opportunity={opportunity}
-                organizationName={organizationForOpportunity(opportunity)?.name}
+                organizationName={organization.name}
                 href={`/oportunidades/${opportunity.slug}`}
                 today={today}
               />

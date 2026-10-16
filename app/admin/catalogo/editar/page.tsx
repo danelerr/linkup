@@ -26,8 +26,8 @@ export default async function EditorPage({
   const kind = query.tipo === "opportunity" ? "opportunity" : "startup";
   const existing = query.slug
     ? kind === "startup"
-      ? organizationBySlug(query.slug, true)
-      : opportunityBySlug(query.slug, true)
+      ? await organizationBySlug(query.slug, true)
+      : await opportunityBySlug(query.slug, true)
     : undefined;
   if (query.slug && !existing) notFound();
   const submission = query.envio
@@ -36,6 +36,7 @@ export default async function EditorPage({
   if (query.envio && (!submission || submission.status !== "pending"))
     notFound();
   const today = new Date().toISOString().slice(0, 10);
+  const organizations = await getOrganizations(true);
   const initial = existing
     ? { ...existing }
     : {
@@ -64,7 +65,7 @@ export default async function EditorPage({
           : {
               title: submission?.opportunityTitle || "",
               organizationSlug:
-                getOrganizations(true).find(
+                organizations.find(
                   (item) =>
                     item.name.toLocaleLowerCase() ===
                     submission?.organizationName.toLocaleLowerCase(),
@@ -107,7 +108,7 @@ export default async function EditorPage({
           initial={initial}
           existingSlug={query.slug}
           submissionId={submission?.id}
-          organizations={getOrganizations(true).map(({ slug, name }) => ({
+          organizations={organizations.map(({ slug, name }) => ({
             slug,
             name,
           }))}

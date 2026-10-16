@@ -1,7 +1,7 @@
 # Alternativas de infraestructura y costos
 
 Versión: 2 · Precios verificados el 25 de septiembre de 2026 (fuentes al final). Los planes gratuitos cambian con frecuencia: vuelve a comprobarlos antes de decidir.
-Estado: comparación para decidir. Según D-024, no se despliega ni se conecta ningún servicio externo sin instrucción expresa.
+Estado: decidido en D-028 (16 de octubre de 2026): la app está en Vercel con PostgreSQL en Neon, en São Paulo, y el código ya se migró. Las secciones 1 a 4 conservan la comparación que llevó a esa decisión; 5 a 9 siguen vigentes.
 
 Este documento compara cómo llevar LinkUp de la alfa local a internet: dónde alojar la aplicación, qué base de datos usar, cómo enviar correos y alertas, y cómo guardar CV si algún día se admiten archivos.
 

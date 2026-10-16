@@ -1,11 +1,9 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
 import { createServer } from "node:net";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import Database from "better-sqlite3";
+import { Pool } from "pg";
+import { startTestDatabase } from "./postgres";
 
 // A local stand-in for Resend's POST /emails. It keeps every message and,
 // like Resend before a domain is verified, rejects some recipients.
@@ -40,8 +38,8 @@ await new Promise<void>((resolve) => resend.listen(0, "127.0.0.1", resolve));
 const resendAddress = resend.address();
 assert(resendAddress && typeof resendAddress === "object");
 
-const temporary = mkdtempSync(join(tmpdir(), "linkup-email-"));
-const database = join(temporary, "test.sqlite");
+const database = await startTestDatabase();
+const db = new Pool({ connectionString: database.url });
 const portProbe = createServer();
 await new Promise<void>((resolve) => portProbe.listen(0, "127.0.0.1", resolve));
 const address = portProbe.address();
@@ -63,7 +61,7 @@ const server = spawn(
     env: {
       ...process.env,
       NEXT_TELEMETRY_DISABLED: "1",
-      LINKUP_DATABASE_PATH: database,
+      DATABASE_URL: database.url,
       LINKUP_SEED_DEMO: "false",
       BETTER_AUTH_URL: origin,
       BETTER_AUTH_SECRET: crypto.randomUUID() + crypto.randomUUID(),
@@ -233,12 +231,11 @@ try {
     ).response.status,
     200,
   );
-  const db = new Database(database, { readonly: true });
   assert.deepEqual(
-    db.prepare("SELECT display_name FROM users WHERE email=?").get(beto),
-    { display_name: "Beto" },
+    (await db.query("SELECT display_name FROM users WHERE email=$1", [beto]))
+      .rows,
+    [{ display_name: "Beto" }],
   );
-  db.close();
   check("a code creates the account the first time, with the name given");
 
   const sentBefore = outbox.length;
@@ -297,13 +294,10 @@ try {
     200,
     JSON.stringify(firstPassword.data),
   );
-  const accounts = new Database(database, { readonly: true });
-  const providers = accounts
-    .prepare(
-      "SELECT a.providerId AS provider FROM auth_account a JOIN auth_user u ON u.id = a.userId WHERE u.email = ?",
-    )
-    .all(beto) as { provider: string }[];
-  accounts.close();
+  const { rows: providers } = await db.query<{ provider: string }>(
+    "SELECT a.provider_id AS provider FROM auth_account a JOIN auth_user u ON u.id = a.user_id WHERE u.email = $1",
+    [beto],
+  );
   assert.deepEqual(
     providers.map((row) => row.provider),
     ["credential"],
@@ -336,5 +330,6 @@ try {
     else server.once("exit", () => resolve());
   });
   await new Promise<void>((resolve) => resend.close(() => resolve()));
-  rmSync(temporary, { recursive: true, force: true });
+  await db.end();
+  await database.stop();
 }

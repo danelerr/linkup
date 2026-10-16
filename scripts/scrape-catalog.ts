@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import "./env";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import Database from "better-sqlite3";
 import { mapOpportunityRow, mapStartupRow } from "../lib/catalog-import";
 import {
   ashbyFeedSchema, ashbyOpportunity, contentHash, ripplingPublicJob, robotsAllow,
@@ -12,7 +12,7 @@ const args = process.argv.slice(2);
 if (args.some((arg) => arg !== "--importar" && arg !== "--help"))
   throw new Error("Uso: npm run recopilar [-- --importar]. Sin --importar no toca la base.");
 if (args.includes("--help")) {
-  console.log("npm run recopilar: recopila fuentes oficiales y genera JSON.\nnpm run recopilar -- --importar: además crea borradores, con respaldo previo. Nunca publica ni modifica registros existentes.");
+  console.log("npm run recopilar: recopila fuentes oficiales y genera JSON.\nnpm run recopilar -- --importar: además crea borradores. Nunca publica ni modifica registros existentes.");
   process.exit(0);
 }
 if (args.includes("--importar") && process.env.LINKUP_SEED_DEMO === "true")
@@ -150,22 +150,14 @@ console.log(`Captura: ${startups.length} startups, ${opportunities.length} vacan
 
 if (args.includes("--importar")) {
   if (!startups.length && !opportunities.length) throw new Error("No hay registros válidos; la base no se modifica.");
-  const filename = resolve(process.env.LINKUP_DATABASE_PATH || ".data/linkup.sqlite");
-  let backup: string | null = null;
-  if (existsSync(filename)) {
-    const backupDirectory = resolve(".data/backups");
-    mkdirSync(backupDirectory, { recursive: true });
-    backup = resolve(backupDirectory, `antes-recopilacion-${capturedAt.replace(/[:.]/g, "-")}.sqlite`);
-    const database = new Database(filename, { readonly: true, fileMustExist: true });
-    try { await database.backup(backup); } finally { database.close(); }
-    console.log(`Respaldo consistente: ${backup}`);
-  }
   const { importCatalogRows } = await import("../lib/catalog-import");
+  const { closeDb } = await import("../db/index");
   const results = {
-    startups: importCatalogRows("system", "startup", startups),
-    opportunities: importCatalogRows("system", "opportunity", opportunities),
+    startups: await importCatalogRows("system", "startup", startups),
+    opportunities: await importCatalogRows("system", "opportunity", opportunities),
   };
-  write("importacion.json", { capturedAt, database: filename, backup, results });
+  await closeDb();
+  write("importacion.json", { capturedAt, results });
   for (const [kind, rows] of Object.entries(results)) {
     const count = (status: string) => rows.filter((row) => row.status === status).length;
     console.log(`${kind}: ${count("created")} borradores creados; ${count("duplicate")} duplicados omitidos; ${count("error")} errores.`);

@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
   const parsed = saveSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success || !opportunityBySlug(parsed.data.opportunitySlug)) {
+  if (!parsed.success || !await opportunityBySlug(parsed.data.opportunitySlug)) {
     return NextResponse.json(
       { error: "Oportunidad inválida." },
       { status: 400 },

@@ -22,14 +22,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-function queryFromJson(value: string) {
-  try {
-    const parsed = JSON.parse(value) as Record<string, string>;
-    return new URLSearchParams(parsed).toString();
-  } catch {
-    return "abiertas=1";
-  }
-}
 
 export default async function AlertsPage({
   searchParams,
@@ -40,7 +32,7 @@ export default async function AlertsPage({
   const filters = filterParams(parseFilters(params));
   const user = await requireSyncedUser(`/mi-linkup/alertas?${filters}`);
   const alerts = await listSavedSearches(user.userId);
-  const notifications = listNotifications(user.userId);
+  const notifications = await listNotifications(user.userId);
   const unread = notifications.filter((item) => !item.read_at).length;
   return (
     <div className="grid gap-10">
@@ -124,7 +116,7 @@ export default async function AlertsPage({
                 </span>
                 <Link
                   className="grid size-10 place-items-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-action"
-                  href={`/?${queryFromJson(alert.queryJson)}`}
+                  href={`/?${new URLSearchParams(alert.query)}`}
                   aria-label={`Abrir búsqueda ${alert.label}`}
                 >
                   <Search className="size-4" aria-hidden="true" />

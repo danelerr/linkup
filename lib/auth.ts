@@ -1,10 +1,17 @@
 import { betterAuth, type BetterAuthOptions } from "better-auth";
-import { getMigrations } from "better-auth/db/migration";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { getSqlite } from "@/db";
+import { getDb } from "@/db";
+import {
+  authAccount,
+  authRateLimit,
+  authSession,
+  authUser,
+  authVerification,
+} from "@/db/schema";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth-policy";
 import {
   codeEmail,
@@ -15,10 +22,10 @@ import {
 
 function localSecret() {
   if (process.env.BETTER_AUTH_SECRET) return process.env.BETTER_AUTH_SECRET;
-  const path = resolve(
-    dirname(process.env.LINKUP_DATABASE_PATH || ".data/linkup.sqlite"),
-    "auth-secret",
-  );
+  if (process.env.VERCEL)
+    throw new Error("Falta BETTER_AUTH_SECRET en las variables de Vercel.");
+  // Locally, a private secret is created once and kept out of git.
+  const path = resolve(".data/auth-secret");
   mkdirSync(dirname(path), { recursive: true });
   if (!existsSync(path)) {
     try {
@@ -40,19 +47,31 @@ function options(): BetterAuthOptions {
   // account deletes that account's password (Better Auth's protection
   // against someone registering another person's email first).
   const email = emailEnabled();
+  // Production sets BETTER_AUTH_URL. Preview deployments have no fixed
+  // address, so their deployment and branch URLs are trusted instead.
+  const vercelOrigins = [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL]
+    .filter(Boolean)
+    .map((host) => `https://${host}`);
   return {
     appName: "LinkUp",
-    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    baseURL:
+      process.env.BETTER_AUTH_URL ||
+      vercelOrigins[0] ||
+      "http://localhost:3000",
+    trustedOrigins: vercelOrigins,
     secret: localSecret(),
-    database: getSqlite(),
-    user: { modelName: "auth_user" },
-    session: {
-      modelName: "auth_session",
-      expiresIn: 60 * 60 * 24 * 7,
-      updateAge: 60 * 60 * 24,
-    },
-    account: { modelName: "auth_account" },
-    verification: { modelName: "auth_verification" },
+    // The tables are part of db/schema.ts and its migrations.
+    database: drizzleAdapter(getDb(), {
+      provider: "pg",
+      schema: {
+        user: authUser,
+        session: authSession,
+        account: authAccount,
+        verification: authVerification,
+        rateLimit: authRateLimit,
+      },
+    }),
+    session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
     emailAndPassword: {
       enabled: true,
       minPasswordLength: MIN_PASSWORD_LENGTH,
@@ -80,27 +99,12 @@ function options(): BetterAuthOptions {
           }),
         ]
       : [],
-    rateLimit: { enabled: true, window: 60, max: 30 },
+    rateLimit: { enabled: true, window: 60, max: 30, storage: "database" },
     advanced: { cookiePrefix: "linkup" },
   };
 }
 
-let migration: Promise<void> | undefined;
 let instance: ReturnType<typeof betterAuth> | undefined;
-export async function ensureAuth() {
-  migration ??= (async () => {
-    const config = options();
-    const { runMigrations } = await getMigrations(config);
-    await runMigrations();
-    instance = betterAuth(config);
-  })().catch((error) => {
-    migration = undefined;
-    throw error;
-  });
-  await migration;
-}
-
 export async function getAuth() {
-  await ensureAuth();
-  return instance!;
+  return (instance ??= betterAuth(options()));
 }

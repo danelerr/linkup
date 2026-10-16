@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
     const { company: _company, ...data } = parsed.data;
     void _company;
-    if (duplicateSubmission(data.kind, data.sourceUrl, data.organizationName)) {
+    if (await duplicateSubmission(data.kind, data.sourceUrl, data.organizationName)) {
       results.push({
         row: index + 1,
         status: "duplicate",

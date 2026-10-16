@@ -32,7 +32,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const organization = organizationBySlug(slug);
+  const organization = await organizationBySlug(slug);
   if (!organization) return {};
   return {
     title: organization.name,
@@ -49,11 +49,11 @@ export default async function StartupDetailPage({
   searchParams: Promise<{ from?: string }>;
 }) {
   const { slug } = await params;
-  const organization = organizationBySlug(slug);
+  const organization = await organizationBySlug(slug);
   if (!organization) notFound();
   const openings =
     organization.status === "published"
-      ? opportunitiesForOrganization(organization.slug)
+      ? await opportunitiesForOrganization(organization.slug)
       : [];
   const from = safeRelativeReturnPath((await searchParams).from);
   const today = todayIso();

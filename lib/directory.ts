@@ -1,10 +1,12 @@
-import { getSqlite } from "@/db";
+import { sql, type SQL } from "drizzle-orm";
+import { getDb } from "@/db";
 import { ensureCatalog } from "@/lib/catalog";
 import {
   normalizeText,
   type Organization,
   type Opportunity,
 } from "@/lib/catalog-types";
+import { todayIso } from "@/lib/dates";
 import type { DirectoryFilters } from "@/lib/directory-filters";
 
 export const PAGE_SIZE = 12;
@@ -29,41 +31,31 @@ export type DirectoryPage = {
   today: string;
 };
 
-export function directoryConditions(filters: DirectoryFilters) {
-  const org: string[] = ["o.status = 'published'"];
-  const opp: string[] = [
-    "p.status = 'published'",
-    "(p.closes_at IS NULL OR p.closes_at >= @today)",
+const and = (conditions: SQL[]) => sql.join(conditions, sql` AND `);
+
+/**
+ * SQL conditions for the directory and saved alerts: `organizations` filters
+ * startups (o) and `opportunities` filters their openings (p).
+ */
+export function directoryConditions(filters: DirectoryFilters, today: string) {
+  const org: SQL[] = [sql`o.status = 'published'`];
+  const opp: SQL[] = [
+    sql`p.status = 'published'`,
+    sql`(p.closes_at IS NULL OR p.closes_at >= ${today})`,
   ];
-  const params: Record<string, string | number> = {
-    today: new Date().toISOString().slice(0, 10),
-  };
-  if (filters.industria) {
-    org.push("o.industry = @industry");
-    params.industry = filters.industria;
-  }
-  for (const [key, column] of [
-    ["area", "area"],
-    ["tipo", "type"],
-    ["modalidad", "modality"],
-    ["nivel", "level"],
-  ] as const) {
-    if (filters[key]) {
-      opp.push(`p.${column} = @${key}`);
-      params[key] = filters[key];
-    }
-  }
-  for (const [i, word] of normalizeText(filters.q)
+  if (filters.industria) org.push(sql`o.industry = ${filters.industria}`);
+  if (filters.area) opp.push(sql`p.area = ${filters.area}`);
+  if (filters.tipo) opp.push(sql`p.type = ${filters.tipo}`);
+  if (filters.modalidad) opp.push(sql`p.modality = ${filters.modalidad}`);
+  if (filters.nivel) opp.push(sql`p.level = ${filters.nivel}`);
+  const words = normalizeText(filters.q)
     .split(/\s+/)
     .filter(Boolean)
-    .entries()) {
-    params[`q${i}`] = `%${word.replace(/[\\%_]/g, "\\$&")}%`;
-    opp.push(
-      `(p.search_text LIKE @q${i} ESCAPE '\\' OR o.search_text LIKE @q${i} ESCAPE '\\')`,
-    );
-  }
-  const matchOpportunities = opp.join(" AND ");
-  const exists = `EXISTS(SELECT 1 FROM catalog_opportunities p WHERE p.organization_slug = o.slug AND ${matchOpportunities})`;
+    .map((word) => `%${word.replace(/[\\%_]/g, "\\$&")}%`);
+  for (const word of words)
+    opp.push(sql`(p.search_text LIKE ${word} OR o.search_text LIKE ${word})`);
+  const opportunities = and(opp);
+  const hasOpenings = sql`EXISTS (SELECT 1 FROM catalog_opportunities p WHERE p.organization_slug = o.slug AND ${opportunities})`;
   if (
     filters.abiertas ||
     filters.area ||
@@ -71,122 +63,113 @@ export function directoryConditions(filters: DirectoryFilters) {
     filters.modalidad ||
     filters.nivel
   )
-    org.push(exists);
-  else if (filters.q.trim()) {
-    const words = normalizeText(filters.q)
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((_, i) => `o.search_text LIKE @q${i} ESCAPE '\\'`)
-      .join(" AND ");
-    org.push(`((${words}) OR ${exists})`);
-  }
-  return {
-    organizations: org.join(" AND "),
-    opportunities: matchOpportunities,
-    hasOpenings: exists,
-    params,
-  };
+    org.push(hasOpenings);
+  else if (words.length)
+    org.push(
+      sql`((${and(words.map((word) => sql`o.search_text LIKE ${word}`))}) OR ${hasOpenings})`,
+    );
+  return { organizations: and(org), opportunities, hasOpenings };
 }
 
-export function getDirectory(filters: DirectoryFilters): DirectoryPage {
-  ensureCatalog();
-  const db = getSqlite();
-  const condition = directoryConditions(filters);
-  const total = (
-    db
-      .prepare(
-        `SELECT count(*) value FROM catalog_organizations o WHERE ${condition.organizations}`,
-      )
-      .get(condition.params) as { value: number }
-  ).value;
-  const hiring = (
-    db
-      .prepare(
-        `SELECT count(*) value FROM catalog_organizations o WHERE ${condition.organizations} AND ${condition.hasOpenings}`,
-      )
-      .get(condition.params) as { value: number }
-  ).value;
+const distinct = async (query: SQL) =>
+  (await getDb().execute<{ value: string }>(query)).rows
+    .map((row) => row.value)
+    .filter(Boolean);
+
+export async function getDirectory(
+  filters: DirectoryFilters,
+): Promise<DirectoryPage> {
+  await ensureCatalog();
+  const db = getDb();
+  const today = todayIso();
+  const condition = directoryConditions(filters, today);
+  const [counts, catalog, industries, areas, levels] = await Promise.all([
+    db.execute<{ total: number; hiring: number; openings: number }>(sql`
+      SELECT
+        (SELECT count(*)::int FROM catalog_organizations o
+          WHERE ${condition.organizations}) AS total,
+        (SELECT count(*)::int FROM catalog_organizations o
+          WHERE ${condition.organizations} AND ${condition.hasOpenings}) AS hiring,
+        (SELECT count(*)::int FROM catalog_opportunities p
+          JOIN catalog_organizations o ON o.slug = p.organization_slug
+          WHERE ${condition.organizations} AND ${condition.opportunities}) AS openings`),
+    db.execute<DirectoryPage["catalog"]>(sql`
+      SELECT
+        (SELECT count(*)::int FROM catalog_organizations WHERE status = 'published') AS startups,
+        count(p.slug)::int AS openings,
+        count(*) FILTER (WHERE p.published_at > ${today}::date - 7)::int AS "newThisWeek"
+      FROM catalog_opportunities p
+      JOIN catalog_organizations o ON o.slug = p.organization_slug
+      WHERE p.status = 'published' AND o.status = 'published'
+        AND (p.closes_at IS NULL OR p.closes_at >= ${today})`),
+    distinct(
+      sql`SELECT DISTINCT industry AS value FROM catalog_organizations WHERE status = 'published' ORDER BY industry`,
+    ),
+    distinct(
+      sql`SELECT DISTINCT area AS value FROM catalog_opportunities WHERE status = 'published' AND (closes_at IS NULL OR closes_at >= ${today}) ORDER BY area`,
+    ),
+    distinct(
+      sql`SELECT DISTINCT level AS value FROM catalog_opportunities WHERE status = 'published' AND (closes_at IS NULL OR closes_at >= ${today}) ORDER BY level`,
+    ),
+  ]);
+  const { total, hiring, openings } = counts.rows[0];
   const page = Math.min(
     Math.max(1, Math.ceil(total / PAGE_SIZE)),
     Math.floor(filters.pagina),
   );
   // Startups someone can join right now come first; the chosen order applies
   // within each group.
-  const order = `${condition.hasOpenings} DESC, ${
+  const order =
     filters.orden === "nombre"
-      ? "o.name COLLATE NOCASE ASC"
-      : "o.updated_at DESC, o.slug ASC"
-  }`;
-  const orgRows = db
-    .prepare(
-      `SELECT o.data_json FROM catalog_organizations o WHERE ${condition.organizations} ORDER BY ${order} LIMIT @limit OFFSET @offset`,
-    )
-    .all({
-      ...condition.params,
-      limit: PAGE_SIZE,
-      offset: (page - 1) * PAGE_SIZE,
-    }) as { data_json: string }[];
-  const count = db
-    .prepare(
-      `SELECT count(*) value FROM catalog_opportunities p JOIN catalog_organizations o ON o.slug = p.organization_slug WHERE ${condition.organizations} AND ${condition.opportunities}`,
-    )
-    .get(condition.params) as { value: number };
-  const rows = orgRows.map((row) => {
-    const organization = JSON.parse(row.data_json) as Organization;
-    const params = { ...condition.params, slug: organization.slug };
-    const where = `p.organization_slug = @slug AND ${condition.opportunities}`;
-    const matching = db
-      .prepare(
-        `SELECT p.data_json FROM catalog_opportunities p JOIN catalog_organizations o ON o.slug=p.organization_slug WHERE ${where} ORDER BY p.published_at DESC, p.slug LIMIT 3`,
-      )
-      .all(params) as { data_json: string }[];
-    const count = db
-      .prepare(
-        `SELECT count(*) value FROM catalog_opportunities p JOIN catalog_organizations o ON o.slug=p.organization_slug WHERE ${where}`,
-      )
-      .get(params) as { value: number };
+      ? sql`lower(o.name) ASC, o.slug ASC`
+      : sql`o.updated_at DESC, o.slug ASC`;
+  const organizations = (
+    await db.execute<{ data: Organization }>(sql`
+      SELECT o.data FROM catalog_organizations o
+      WHERE ${condition.organizations}
+      ORDER BY ${condition.hasOpenings} DESC, ${order}
+      LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}`)
+  ).rows.map((row) => row.data);
+  // Up to three matching openings per startup on this page, and how many
+  // there are in total, in one query.
+  const slugs = organizations.map((organization) => organization.slug);
+  const matches = slugs.length
+    ? (
+        await db.execute<{
+          slug: string;
+          data: Opportunity;
+          count: number;
+        }>(sql`
+          SELECT slug, data, count FROM (
+            SELECT p.organization_slug AS slug, p.data,
+              row_number() OVER (PARTITION BY p.organization_slug ORDER BY p.published_at DESC, p.slug) AS position,
+              count(*) OVER (PARTITION BY p.organization_slug)::int AS count
+            FROM catalog_opportunities p
+            JOIN catalog_organizations o ON o.slug = p.organization_slug
+            WHERE p.organization_slug IN ${slugs} AND ${condition.opportunities}
+          ) ranked
+          WHERE position <= 3
+          ORDER BY slug, position`)
+      ).rows
+    : [];
+  const rows = organizations.map((organization) => {
+    const own = matches.filter((match) => match.slug === organization.slug);
     return {
       organization,
-      matchingOpportunities: matching.map(
-        (item) => JSON.parse(item.data_json) as Opportunity,
-      ),
-      openingCount: count.value,
+      matchingOpportunities: own.map((match) => match.data),
+      openingCount: own[0]?.count ?? 0,
     };
   });
-  const values = (sql: string) =>
-    (db.prepare(sql).all() as { value: string }[])
-      .map((row) => row.value)
-      .filter(Boolean);
-  const catalog = db
-    .prepare(
-      `SELECT
-        (SELECT count(*) FROM catalog_organizations WHERE status = 'published') startups,
-        count(p.slug) openings,
-        count(CASE WHEN julianday(@today) - julianday(p.published_at) < 7 THEN 1 END) newThisWeek
-      FROM catalog_opportunities p JOIN catalog_organizations o ON o.slug = p.organization_slug
-      WHERE p.status = 'published' AND o.status = 'published' AND (p.closes_at IS NULL OR p.closes_at >= @today)`,
-    )
-    .get({ today: condition.params.today }) as DirectoryPage["catalog"];
   return {
     rows,
     total,
     hiring,
-    opportunityCount: count.value,
-    catalog,
-    today: String(condition.params.today),
+    opportunityCount: openings,
+    catalog: catalog.rows[0],
+    today,
     page,
     pageSize: PAGE_SIZE,
     hasDemo: rows.some((row) => row.organization.isDemo),
-    facets: {
-      industries: values(
-        "SELECT DISTINCT industry value FROM catalog_organizations WHERE status='published' ORDER BY industry",
-      ),
-      areas: values(
-        "SELECT DISTINCT area value FROM catalog_opportunities WHERE status='published' AND (closes_at IS NULL OR closes_at >= date('now')) ORDER BY area",
-      ),
-      levels: values(
-        "SELECT DISTINCT level value FROM catalog_opportunities WHERE status='published' AND (closes_at IS NULL OR closes_at >= date('now')) ORDER BY level",
-      ),
-    },
+    facets: { industries, areas, levels },
   };
 }

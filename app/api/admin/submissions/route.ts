@@ -30,7 +30,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Decisión inválida." }, { status: 400 });
   if (
     parsed.data.organizationSlug &&
-    !organizationBySlug(parsed.data.organizationSlug)
+    !await organizationBySlug(parsed.data.organizationSlug)
   ) {
     return NextResponse.json(
       { error: "La organización vinculada no existe." },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { getDb } from "@/db";
+import { getDb, isUniqueViolation } from "@/db";
 import {
   auditEvents,
   catalogOrganizations,
@@ -211,11 +211,11 @@ export class CatalogError extends Error {
     super(message);
   }
 }
-export function saveCatalogEntry(
+export async function saveCatalogEntry(
   actorId: string,
   input: z.infer<typeof catalogEditSchema>,
 ) {
-  ensureCatalog();
+  await ensureCatalog();
   const parsed = (
     input.kind === "startup" ? organizationSchema : opportunitySchema
   ).safeParse(input.data);
@@ -224,13 +224,14 @@ export function saveCatalogEntry(
   const value = parsed.data;
   if (input.existingSlug && input.existingSlug !== value.slug)
     throw new CatalogError("El enlace de un registro existente no se cambia.");
-  const db = getDb();
   try {
-    return db.transaction((tx) => {
+    return await getDb().transaction(async (tx) => {
+      // Locked until the transaction ends, so a concurrent edit waits and
+      // then fails the freshness check instead of overwriting this one.
       const existing =
         input.kind === "startup"
-          ? organizationBySlug(value.slug, true)
-          : opportunityBySlug(value.slug, true);
+          ? await organizationBySlug(value.slug, true, { db: tx, lock: true })
+          : await opportunityBySlug(value.slug, true, { db: tx, lock: true });
       if (input.existingSlug && !existing)
         throw new CatalogError("El registro ya no existe.", 404);
       if (existing && !input.existingSlug)
@@ -242,11 +243,11 @@ export function saveCatalogEntry(
         );
       let submission;
       if (input.submissionId) {
-        submission = tx
+        [submission] = await tx
           .select()
           .from(submissions)
           .where(eq(submissions.id, input.submissionId))
-          .get();
+          .for("update");
         if (!submission || submission.status !== "pending")
           throw new CatalogError(
             "Este envío ya fue revisado o no existe.",
@@ -266,28 +267,27 @@ export function saveCatalogEntry(
           );
       }
       const previousTime = existing ? Date.parse(existing.updatedAt) : 0;
-      const now = new Date(
-        Math.max(Date.now(), (previousTime || 0) + 1),
-      ).toISOString();
+      const now = new Date(Math.max(Date.now(), (previousTime || 0) + 1));
       const base = {
         ...value,
         id: existing?.id ?? crypto.randomUUID(),
-        updatedAt: now,
+        updatedAt: now.toISOString(),
       };
       if (input.kind === "startup") {
         const data = { ...base, hiring: false } as Organization;
         const values = organizationValues(data);
         if (existing)
-          tx.update(catalogOrganizations)
+          await tx
+            .update(catalogOrganizations)
             .set(values)
-            .where(eq(catalogOrganizations.slug, value.slug))
-            .run();
-        else tx.insert(catalogOrganizations).values(values).run();
+            .where(eq(catalogOrganizations.slug, value.slug));
+        else await tx.insert(catalogOrganizations).values(values);
       } else {
         const publishedAt =
           value.status === "published" && existing?.status !== "published"
-            ? now
-            : ((existing as Opportunity | undefined)?.publishedAt ?? now);
+            ? now.toISOString()
+            : ((existing as Opportunity | undefined)?.publishedAt ??
+              now.toISOString());
         const data = {
           ...base,
           publishedAt,
@@ -295,7 +295,11 @@ export function saveCatalogEntry(
             (value as z.infer<typeof opportunitySchema>).applicationMode ===
             "native",
         } as Opportunity;
-        const organization = organizationBySlug(data.organizationSlug, true);
+        const organization = await organizationBySlug(
+          data.organizationSlug,
+          true,
+          { db: tx },
+        );
         if (!organization)
           throw new CatalogError(
             "Primero agrega la startup a la que pertenece esta oportunidad.",
@@ -304,49 +308,45 @@ export function saveCatalogEntry(
           throw new CatalogError("La startup también debe estar publicada.");
         const values = opportunityValues(data);
         if (existing)
-          tx.update(catalogOpportunities)
+          await tx
+            .update(catalogOpportunities)
             .set(values)
-            .where(eq(catalogOpportunities.slug, value.slug))
-            .run();
-        else tx.insert(catalogOpportunities).values(values).run();
+            .where(eq(catalogOpportunities.slug, value.slug));
+        else await tx.insert(catalogOpportunities).values(values);
       }
       if (submission) {
-        tx.update(submissions)
+        await tx
+          .update(submissions)
           .set({ status: "approved", updatedAt: now })
-          .where(eq(submissions.id, submission.id))
-          .run();
-        tx.insert(moderationDecisions)
-          .values({
-            id: crypto.randomUUID(),
-            submissionId: submission.id,
-            actorId,
-            status: "approved",
-            reason: input.reason,
-            createdAt: now,
-          })
-          .run();
-      }
-      tx.insert(auditEvents)
-        .values({
+          .where(eq(submissions.id, submission.id));
+        await tx.insert(moderationDecisions).values({
           id: crypto.randomUUID(),
+          submissionId: submission.id,
           actorId,
-          action: existing ? "catalog.updated" : "catalog.created",
-          entityType: input.kind,
-          entityId: value.slug,
-          detailJson: JSON.stringify({
-            reason: input.reason,
-            submissionId: input.submissionId,
-            status: value.status,
-            before: existing ?? null,
-          }),
+          status: "approved",
+          reason: input.reason,
           createdAt: now,
-        })
-        .run();
-      return { slug: value.slug, updatedAt: now };
+        });
+      }
+      await tx.insert(auditEvents).values({
+        id: crypto.randomUUID(),
+        actorId,
+        action: existing ? "catalog.updated" : "catalog.created",
+        entityType: input.kind,
+        entityId: value.slug,
+        detail: {
+          reason: input.reason,
+          submissionId: input.submissionId,
+          status: value.status,
+          before: existing ?? null,
+        },
+        createdAt: now,
+      });
+      return { slug: value.slug, updatedAt: base.updatedAt };
     });
   } catch (error) {
     if (error instanceof CatalogError) throw error;
-    if (String(error).includes("UNIQUE constraint"))
+    if (isUniqueViolation(error))
       throw new CatalogError(
         "Ya existe un registro con ese sitio, fuente o enlace. Edita el existente.",
         409,

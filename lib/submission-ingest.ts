@@ -1,58 +1,80 @@
-import { getSqlite } from "@/db";
+import { and, eq } from "drizzle-orm";
+import { getDb } from "@/db";
+import {
+  catalogOpportunities,
+  catalogOrganizations,
+  submissions,
+} from "@/db/schema";
 import { canonicalSource, ensureCatalog } from "@/lib/catalog";
 import { normalizeText } from "@/lib/catalog-types";
 
-export function duplicateSubmission(
+/** The proposal repeats a catalog record or another pending proposal. */
+export async function duplicateSubmission(
   kind: string,
   source: string,
   organizationName: string,
 ) {
   if (kind === "claim" || kind === "correction") return false;
-  ensureCatalog();
+  await ensureCatalog();
   const key = canonicalSource(source);
-  const db = getSqlite();
+  const db = getDb();
+  const exists = async (query: Promise<unknown[]>) => (await query).length > 0;
   if (
     kind === "opportunity" &&
-    db
-      .prepare("SELECT 1 FROM catalog_opportunities WHERE source_key = ?")
-      .get(key)
+    key &&
+    (await exists(
+      db
+        .select({ id: catalogOpportunities.id })
+        .from(catalogOpportunities)
+        .where(eq(catalogOpportunities.sourceKey, key))
+        .limit(1),
+    ))
   )
     return true;
   if (
     kind === "startup" &&
-    db
-      .prepare("SELECT 1 FROM catalog_organizations WHERE website_key = ?")
-      .get(new URL(source).hostname.replace(/^www\./, ""))
+    (await exists(
+      db
+        .select({ id: catalogOrganizations.id })
+        .from(catalogOrganizations)
+        .where(
+          eq(
+            catalogOrganizations.websiteKey,
+            new URL(source).hostname.replace(/^www\./, ""),
+          ),
+        )
+        .limit(1),
+    ))
   )
     return true;
+  const pending = and(
+    eq(submissions.kind, kind),
+    eq(submissions.status, "pending"),
+  );
   if (
-    db
-      .prepare(
-        "SELECT 1 FROM submissions WHERE kind=? AND status='pending' AND canonical_key=?",
-      )
-      .get(kind, key)
+    key &&
+    (await exists(
+      db
+        .select({ id: submissions.id })
+        .from(submissions)
+        .where(and(pending, eq(submissions.canonicalKey, key)))
+        .limit(1),
+    ))
   )
     return true;
-  if (
+  return (
     kind === "startup" &&
-    db
-      .prepare(
-        "SELECT 1 FROM submissions WHERE kind='startup' AND status='pending' AND normalized_name=?",
-      )
-      .get(normalizeText(organizationName))
-  )
-    return true;
-  // Compatibility with entries created before the indexed intake migration.
-  const legacy = db
-    .prepare(
-      "SELECT source_url, organization_name FROM submissions WHERE kind=? AND status='pending' AND canonical_key IS NULL",
-    )
-    .all(kind) as { source_url: string; organization_name: string }[];
-  return legacy.some(
-    (row) =>
-      canonicalSource(row.source_url) === key ||
-      (kind === "startup" &&
-        normalizeText(row.organization_name) ===
-          normalizeText(organizationName)),
+    (await exists(
+      db
+        .select({ id: submissions.id })
+        .from(submissions)
+        .where(
+          and(
+            pending,
+            eq(submissions.normalizedName, normalizeText(organizationName)),
+          ),
+        )
+        .limit(1),
+    ))
   );
 }

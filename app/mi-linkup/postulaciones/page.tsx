@@ -10,8 +10,7 @@ import { EmptyState, PageHeader } from "@/components/ui/layout";
 import { statusInfo } from "@/lib/application-status";
 import {
   formatShortDate,
-  opportunityBySlug,
-  organizationForOpportunity,
+  opportunitiesWithOrganizations,
 } from "@/lib/catalog";
 import { requireSyncedUser } from "@/lib/current-user";
 import { listApplications } from "@/lib/user-data";
@@ -29,6 +28,13 @@ export default async function ApplicationsPage({
   const user = await requireSyncedUser("/mi-linkup/postulaciones");
   const params = await searchParams;
   const rows = await listApplications(user.userId);
+  const listed = new Map(
+    (
+      await opportunitiesWithOrganizations(
+        rows.map((row) => row.opportunitySlug),
+      )
+    ).map((item) => [item.opportunity.slug, item]),
+  );
   return (
     <div className="grid gap-8">
       <PageHeader
@@ -44,9 +50,9 @@ export default async function ApplicationsPage({
       {rows.length ? (
         <div className="grid gap-4">
           {rows.map((row) => {
-            const opportunity = opportunityBySlug(row.opportunitySlug);
-            if (!opportunity) return null;
-            const organization = organizationForOpportunity(opportunity);
+            const item = listed.get(row.opportunitySlug);
+            if (!item) return null;
+            const { opportunity, organization } = item;
             const info = statusInfo(row.status);
             return (
               <article
@@ -64,11 +70,11 @@ export default async function ApplicationsPage({
                       </Link>
                     </h2>
                     <p className="mt-0.5 font-meta text-[13px] tracking-[0.02em] text-muted">
-                      {organization?.name} ·{" "}
+                      {organization.name} ·{" "}
                       {row.mode === "native"
                         ? "Postulación en LinkUp"
                         : "Sitio oficial"}{" "}
-                      · {formatShortDate(row.createdAt.slice(0, 10))}
+                      · {formatShortDate(row.createdAt.toISOString().slice(0, 10))}
                     </p>
                   </div>
                   <Badge tone={info.tone}>{info.label}</Badge>

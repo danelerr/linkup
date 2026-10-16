@@ -9,7 +9,8 @@ import { controlClass } from "@/components/ui/field";
 import { EmptyState, PageHeader } from "@/components/ui/layout";
 import { requireOperator } from "@/lib/permissions";
 import { ensureCatalog } from "@/lib/catalog";
-import { getSqlite } from "@/db";
+import { sql } from "drizzle-orm";
+import { getDb } from "@/db";
 import { normalizeText } from "@/lib/catalog-types";
 import { cx } from "@/lib/cx";
 
@@ -30,26 +31,30 @@ export default async function CatalogPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { role } = await requireOperator("/admin/catalogo");
-  ensureCatalog();
+  await ensureCatalog();
   const query = await searchParams;
   const page = Math.max(
     1,
     Math.min(10000, Math.floor(Number(query.pagina) || 1)),
   );
   const q = (query.q || "").slice(0, 120);
-  const union =
-    "SELECT slug, name AS title, status, updated_at, search_text, 'startup' AS kind FROM catalog_organizations UNION ALL SELECT slug, title, status, updated_at, search_text, 'opportunity' AS kind FROM catalog_opportunities";
   const filter = `%${normalizeText(q).replace(/[\\%_]/g, "\\$&")}%`;
-  const rows = getSqlite()
-    .prepare(
-      `SELECT * FROM (${union}) WHERE search_text LIKE ? ESCAPE '\\' ORDER BY updated_at DESC LIMIT 41 OFFSET ?`,
-    )
-    .all(filter, (page - 1) * 40) as {
+  const { rows } = await getDb().execute<{
     slug: string;
     title: string;
     status: string;
     kind: string;
-  }[];
+  }>(sql`
+    SELECT * FROM (
+      SELECT slug, name AS title, status, updated_at, search_text, 'startup' AS kind
+      FROM catalog_organizations
+      UNION ALL
+      SELECT slug, title, status, updated_at, search_text, 'opportunity' AS kind
+      FROM catalog_opportunities
+    ) records
+    WHERE search_text LIKE ${filter}
+    ORDER BY updated_at DESC
+    LIMIT 41 OFFSET ${(page - 1) * 40}`);
   const review = query.envio ? `&envio=${encodeURIComponent(query.envio)}` : "";
   return (
     <WorkspaceShell nav={<AdminNav canManagePeople={role === "admin"} />}>

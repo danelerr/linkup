@@ -19,9 +19,9 @@ function escapeXml(value: string) {
   );
 }
 
-export function GET(request: Request) {
+export async function GET(request: Request) {
   const origin = siteOrigin(new URL(request.url).origin);
-  const organizations = getOrganizations();
+  const organizations = await getOrganizations();
   const visible = new Set(organizations.map((item) => item.slug));
   const paths = [
     "/",
@@ -31,7 +31,7 @@ export function GET(request: Request) {
     // A draft startup hides its opportunities, so their pages return 404.
     // Closed or expired openings stay reachable but are not offered to search
     // engines as current jobs.
-    ...getOpportunities()
+    ...(await getOpportunities())
       .filter(
         (opportunity) =>
           visible.has(opportunity.organizationSlug) &&

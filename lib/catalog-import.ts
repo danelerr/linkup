@@ -187,14 +187,14 @@ export type ImportResult = {
  * admin upload and by `npm run importar`; openings find startups created in
  * earlier calls, so import startups first.
  */
-export function importCatalogRows(
+export async function importCatalogRows(
   actorId: string,
   kind: ImportKind,
   rows: ImportRow[],
-): ImportResult[] {
+): Promise<ImportResult[]> {
   const today = todayIso();
   const startups = new Map<string, string>();
-  for (const organization of getOrganizations(true)) {
+  for (const organization of await getOrganizations(true)) {
     startups.set(organization.slug, organization.slug);
     startups.set(normalizeText(organization.name), organization.slug);
   }
@@ -217,7 +217,7 @@ export function importCatalogRows(
       continue;
     }
     try {
-      const saved = saveCatalogEntry(actorId, {
+      const saved = await saveCatalogEntry(actorId, {
         kind,
         data: mapped.data,
         reason: "Importación de fichas completas",

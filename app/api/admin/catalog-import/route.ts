@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   return Response.json({
-    results: importCatalogRows(
+    results: await importCatalogRows(
       access.user.userId,
       body.data.kind,
       body.data.rows,

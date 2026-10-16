@@ -42,9 +42,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const opportunity = opportunityBySlug(slug);
+  const opportunity = await opportunityBySlug(slug);
   if (!opportunity) return {};
-  const organization = organizationForOpportunity(opportunity);
+  const organization = await organizationForOpportunity(opportunity);
   return {
     title: `${opportunity.title} en ${organization?.name ?? "startup"}`,
     description: opportunity.summary,
@@ -65,9 +65,9 @@ export default async function OpportunityDetailPage({
 }) {
   const { slug } = await params;
   const query = await searchParams;
-  const opportunity = opportunityBySlug(slug);
+  const opportunity = await opportunityBySlug(slug);
   if (!opportunity) notFound();
-  const organization = organizationForOpportunity(opportunity);
+  const organization = await organizationForOpportunity(opportunity);
   if (!organization) notFound();
   const user = await getCurrentUser();
   if (user) await syncUser(user);
@@ -86,10 +86,10 @@ export default async function OpportunityDetailPage({
     isOpportunityOpen(opportunity) && organization.status === "published";
   const closing = closingLabel(opportunity.closesAt, today);
   const startupHref = `/startups/${organization.slug}?from=${encodeURIComponent(from)}`;
-  const siblings = opportunitiesForOrganization(organization.slug).filter(
-    (item) => item.slug !== opportunity.slug,
-  );
-  const similar = similarOpportunities(opportunity);
+  const siblings = (
+    await opportunitiesForOrganization(organization.slug)
+  ).filter((item) => item.slug !== opportunity.slug);
+  const similar = await similarOpportunities(opportunity);
 
   const facts: Fact[] = [
     { label: "Compensación", value: opportunity.compensation },

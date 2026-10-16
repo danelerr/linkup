@@ -23,8 +23,8 @@ import {
 } from "@/lib/application-status";
 import {
   opportunityBySlug,
-  organizationBySlug,
   organizationForOpportunity,
+  organizationNames,
 } from "@/lib/catalog";
 import { requireSyncedUser } from "@/lib/current-user";
 import { cx } from "@/lib/cx";
@@ -59,11 +59,14 @@ export default async function MyLinkUpPage() {
   const firstName = user.displayName.split(" ")[0];
   const recentApplication = applicationRows[0];
   const recentOpportunity = recentApplication
-    ? opportunityBySlug(recentApplication.opportunitySlug)
+    ? await opportunityBySlug(recentApplication.opportunitySlug)
     : null;
   const recentOrganization = recentOpportunity
-    ? organizationForOpportunity(recentOpportunity)
+    ? await organizationForOpportunity(recentOpportunity)
     : null;
+  const workspaceNames = await organizationNames(
+    memberships.map((membership) => membership.organizationSlug),
+  );
   // "Flexible" is a preference, not a directory filter.
   const exploreHref = directoryHref({
     abiertas: "1",
@@ -259,8 +262,8 @@ export default async function MyLinkUpPage() {
               >
                 <span className="min-w-0">
                   <span className="block font-semibold group-hover:text-action">
-                    {organizationBySlug(membership.organizationSlug, true)
-                      ?.name ?? membership.organizationSlug}
+                    {workspaceNames.get(membership.organizationSlug) ??
+                      membership.organizationSlug}
                   </span>
                   <span className="text-[13px] text-muted">
                     {memberRoleLabels[membership.memberRole] ??

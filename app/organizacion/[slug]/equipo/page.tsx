@@ -17,7 +17,7 @@ export default async function OrganizationTeamPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const organization = organizationBySlug(slug);
+  const organization = await organizationBySlug(slug);
   if (!organization) notFound();
   const user = await requireOrganizationOwner(
     `/organizacion/${slug}/equipo`,

@@ -16,7 +16,7 @@ export default async function Home({
 }) {
   const params = await searchParams;
   const filters = parseFilters(params);
-  const data = getDirectory(filters);
+  const data = await getDirectory(filters);
 
   return (
     <SiteShell>

@@ -1,54 +1,12 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1788093046074,
-      "tag": "0000_marvelous_miracleman",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1788093786405,
-      "tag": "0001_powerful_tyger_tiger",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1788093980133,
-      "tag": "0002_curved_smasher",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1788094684542,
-      "tag": "0003_safe_la_nuit",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1790305345787,
-      "tag": "0004_marvelous_queen_noir",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1790308716641,
-      "tag": "0005_orange_shinobi_shaw",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1790372884056,
-      "tag": "0006_large_swarm",
+      "version": "7",
+      "when": 1792165617873,
+      "tag": "0000_initial",
       "breakpoints": true
     }
   ]

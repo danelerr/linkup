@@ -30,7 +30,7 @@ export async function PATCH(request: Request) {
   if (!user)
     return NextResponse.json({ error: "Debes ingresar." }, { status: 401 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success || !organizationBySlug(parsed.data.organizationSlug))
+  if (!parsed.success || !await organizationBySlug(parsed.data.organizationSlug))
     return NextResponse.json({ error: "Solicitud inválida." }, { status: 400 });
   await syncUser(user);
   if (
@@ -43,9 +43,8 @@ export async function PATCH(request: Request) {
       { error: "No tienes acceso a candidatos de esta organización." },
       { status: 403 },
     );
-  const opportunitySlugs = opportunitiesForOrganization(
-    parsed.data.organizationSlug,
-    true,
+  const opportunitySlugs = (
+    await opportunitiesForOrganization(parsed.data.organizationSlug, true)
   ).map((item) => item.slug);
   const updated = await updateOrganizationApplicationStatus(
     user.userId,

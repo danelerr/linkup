@@ -52,6 +52,7 @@ Falta para probar la tesis:
 
 - **Evidencia:** el perfil solo admite un enlace (`portfolioUrl`). No hay experiencias ni piezas de evidencia.
 - **Resultado verificado:** no está modelado. En postulaciones externas el estado lo declara la persona sin confirmación, así que la métrica norte todavía no se puede calcular.
+- **Infraestructura:** PostgreSQL en Neon y Vercel, en São Paulo (D-028). Desarrollo y producción comparten base por ahora.
 - **Correo:** ingreso con código y confirmación de cuentas funcionan con Resend (D-027), pero sin dominio verificado solo llegan al correo del dueño de la cuenta de Resend. Faltan avisos por correo de cambios de estado y alertas.
 - **Embudo:** no se registran eventos de búsqueda, apertura ni postulación.
 - **Oferta:** el catálogo curado tiene 14 startups y 2 vacantes, ninguna de entrada.

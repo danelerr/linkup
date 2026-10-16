@@ -1,5 +1,7 @@
+import "./env";
 import { readFileSync } from "node:fs";
 import Papa from "papaparse";
+import { closeDb } from "../db/index";
 import { detectKind, importCatalogRows } from "../lib/catalog-import";
 
 // Loads the same spreadsheet templates as /admin/importar from the terminal,
@@ -36,7 +38,7 @@ sheets.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "startup" ? -1 : 1));
 
 let failed = 0;
 for (const sheet of sheets) {
-  const results = importCatalogRows("system", sheet.kind, sheet.rows);
+  const results = await importCatalogRows("system", sheet.kind, sheet.rows);
   const created = results.filter((result) => result.status === "created");
   const duplicates = results.filter((result) => result.status === "duplicate");
   const errors = results.filter((result) => result.status === "error");
@@ -47,5 +49,6 @@ for (const sheet of sheets) {
   for (const result of [...duplicates, ...errors])
     console.log(`  fila ${result.row}: ${result.message}`);
 }
+await closeDb();
 if (failed) process.exitCode = 1;
 else console.log("Revisa y publica los borradores en /admin/catalogo.");

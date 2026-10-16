@@ -48,7 +48,7 @@ export default async function AdminPage() {
     getPilotMetrics(),
   ]);
   const pendingRows = rows.filter((row) => row.status === "pending");
-  const organizations = getOrganizations();
+  const organizations = await getOrganizations();
   const options = organizations.map(({ slug, name }) => ({ slug, name }));
   const stats = [
     { value: pendingRows.length, label: "envíos pendientes" },
@@ -108,7 +108,7 @@ export default async function AdminPage() {
                       )}
                     </div>
                     <time className="font-meta text-[13px] text-muted">
-                      {formatShortDate(row.createdAt.slice(0, 10))}
+                      {formatShortDate(row.createdAt.toISOString().slice(0, 10))}
                     </time>
                   </header>
                   <dl className="mt-4 grid gap-3 border-t border-line pt-4 text-sm sm:grid-cols-2">
