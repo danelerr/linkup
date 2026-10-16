@@ -19,9 +19,11 @@ export async function getCurrentUser(): Promise<LinkUpUser | null> {
   if (!session) return null;
   return {
     userId: session.user.id,
-    displayName: session.user.name,
+    // An account created with a code has no name until its first sign-in
+    // finishes; show the start of its email meanwhile.
+    displayName: session.user.name || session.user.email.split("@")[0],
     email: session.user.email,
-    fullName: session.user.name,
+    fullName: session.user.name || null,
   };
 }
 

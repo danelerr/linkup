@@ -1,5 +1,12 @@
 "use client";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -11,42 +18,56 @@ import { controlClass, Field, FormError } from "@/components/ui/field";
 import { cx } from "@/lib/cx";
 
 /**
- * A code sent by email, waiting to be typed: to sign in (which also creates
- * the account the first time), to confirm the email of a password account or
- * to choose a new password.
+ * With email, one path for everyone: the email, then a 6-digit code. The
+ * first code creates the account and asks for a name. A password is an
+ * optional shortcut, added later from the profile. Without email, accounts
+ * use a password only.
  */
-type PendingCode = {
-  email: string;
-  purpose: "sign-in" | "email-verification" | "forget-password";
-  name: string;
-};
+type Step = "email" | "code" | "name" | "password";
+
+const RESEND_SECONDS = 30;
+const linkClass = "font-semibold text-action hover:underline";
 
 export function AuthForm({
   returnTo,
-  initialMode = "signin",
   emailCodes = false,
+  newAccount = false,
 }: {
   returnTo: string;
-  initialMode?: "signin" | "signup";
-  /** The server can send email, so codes are offered next to passwords. */
+  /** The server can send email, so sign-in starts with a code. */
   emailCodes?: boolean;
+  /** Without email: open on "create account" (an action needed one). */
+  newAccount?: boolean;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState(initialMode);
-  const [method, setMethod] = useState<"password" | "code" | "reset">(
-    "password",
-  );
-  const [pending, setPending] = useState<PendingCode | null>(null);
+  const [step, setStep] = useState<Step>(emailCodes ? "email" : "password");
+  const [email, setEmail] = useState("");
+  const [signingUp, setSigningUp] = useState(!emailCodes && newAccount);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const codeInput = useRef<HTMLInputElement>(null);
-  const usingCode = emailCodes && method === "code";
-  const resetting = emailCodes && method === "reset";
+  const [cooldown, setCooldown] = useState(0);
+  const form = useRef<HTMLFormElement>(null);
+  const emailInput = useRef<HTMLInputElement>(null);
+
+  // Each step starts on its first empty field: the email typed in one step
+  // carries over to the next.
+  useEffect(() => {
+    const inputs = [...(form.current?.querySelectorAll("input") ?? [])];
+    (inputs.find((input) => !input.value) ?? inputs[0])?.focus();
+  }, [step, signingUp]);
 
   useEffect(() => {
-    if (pending) codeInput.current?.focus();
-  }, [pending]);
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
+  function go(next: Step) {
+    setStep(next);
+    setError("");
+    setNotice("");
+  }
 
   /** Runs one request; `action` returns true when the person is signed in. */
   async function run(action: () => Promise<boolean>) {
@@ -65,303 +86,261 @@ export function AuthForm({
     }
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email")).trim().toLowerCase();
-    const name = mode === "signup" ? String(form.get("name")).trim() : "";
-    return run(async () => {
-      if (resetting) {
-        const result = await authClient.emailOtp.requestPasswordReset({
-          email,
-        });
-        if (result.error) {
-          setError(
-            result.error.status === 429
-              ? tooManyAttempts
-              : "No pudimos enviar el código. Revisa el correo.",
-          );
-          return false;
-        }
-        setPending({ email, purpose: "forget-password", name: "" });
-        return false;
-      }
-      if (usingCode) {
-        const result = await authClient.emailOtp.sendVerificationOtp({
-          email,
-          type: "sign-in",
-        });
-        if (result.error) {
-          setError(
-            result.error.status === 429
-              ? tooManyAttempts
-              : "No pudimos enviar el código. Revisa el correo.",
-          );
-          return false;
-        }
-        setPending({ email, purpose: "sign-in", name });
-        return false;
-      }
-      const password = String(form.get("password"));
-      if (mode === "signup") {
-        const result = await authClient.signUp.email({ email, password, name });
-        if (result.error) {
-          setError(
-            result.error.status === 429
-              ? tooManyAttempts
-              : "No pudimos crear la cuenta. Revisa los datos; si ya tienes cuenta, ingresa.",
-          );
-          return false;
-        }
-        // No session yet: the account must confirm its email with a code.
-        if (!result.data?.token) {
-          setPending({ email, purpose: "email-verification", name });
-          return false;
-        }
-        return true;
-      }
-      const result = await authClient.signIn.email({ email, password });
-      if (result.error?.code === "EMAIL_NOT_VERIFIED") {
-        // The server just sent a confirmation code to this address.
-        setPending({ email, purpose: "email-verification", name: "" });
-        setNotice("Tu correo aún no está confirmado.");
-        return false;
-      }
-      if (result.error) {
-        setError(
-          result.error.status === 429
-            ? tooManyAttempts
-            : "Revisa tu correo y contraseña.",
-        );
-        return false;
-      }
-      return true;
+  async function sendCode(address: string) {
+    const result = await authClient.emailOtp.sendVerificationOtp({
+      email: address,
+      type: "sign-in",
     });
+    if (result.error) {
+      setError(
+        result.error.status === 429
+          ? tooManyAttempts
+          : "No pudimos enviar el código. Revisa el correo.",
+      );
+      return false;
+    }
+    setEmail(address);
+    setStep("code");
+    setCooldown(RESEND_SECONDS);
+    return true;
   }
 
-  function verify(event: FormEvent<HTMLFormElement>) {
+  function requestCode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!pending) return;
-    const form = new FormData(event.currentTarget);
-    const otp = String(form.get("code")).replace(/\D/g, "");
+    const address = email.trim().toLowerCase();
     return run(async () => {
-      if (pending.purpose === "forget-password") {
-        const password = String(form.get("newPassword"));
-        const reset = await authClient.emailOtp.resetPassword({
-          email: pending.email,
-          otp,
-          password,
-        });
-        if (reset.error) {
-          setError(codeError(reset.error));
-          return false;
-        }
-        // Resetting closes every session; open one with the new password.
-        const signedIn = await authClient.signIn.email({
-          email: pending.email,
-          password,
-        });
-        if (signedIn.error) {
-          setPending(null);
-          setMethod("password");
-          setNotice("Guardamos tu nueva contraseña. Ingresa con ella.");
-          return false;
-        }
-        return true;
-      }
-      const result =
-        pending.purpose === "sign-in"
-          ? await authClient.signIn.emailOtp({
-              email: pending.email,
-              otp,
-              // Only used when this code creates the account.
-              ...(pending.name && { name: pending.name }),
-            })
-          : await authClient.emailOtp.verifyEmail({
-              email: pending.email,
-              otp,
-            });
-      if (result.error) {
-        setError(codeError(result.error));
-        return false;
-      }
-      return true;
-    });
-  }
-
-  function resend() {
-    if (!pending) return;
-    return run(async () => {
-      const result =
-        pending.purpose === "forget-password"
-          ? await authClient.emailOtp.requestPasswordReset({
-              email: pending.email,
-            })
-          : await authClient.emailOtp.sendVerificationOtp({
-              email: pending.email,
-              type: pending.purpose,
-            });
-      if (result.error)
-        setError(
-          result.error.status === 429
-            ? tooManyAttempts
-            : "No pudimos reenviar el código.",
-        );
-      else setNotice("Te enviamos un código nuevo.");
+      await sendCode(address);
       return false;
     });
   }
 
-  if (pending)
+  function verifyCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const input = event.currentTarget.elements.namedItem(
+      "code",
+    ) as HTMLInputElement;
+    return run(async () => {
+      const result = await authClient.signIn.emailOtp({
+        email,
+        otp: input.value,
+      });
+      if (result.error) {
+        setError(codeError(result.error));
+        input.select();
+        return false;
+      }
+      // The code just created this account: it has no name yet.
+      if (!result.data.user.name) {
+        go("name");
+        return false;
+      }
+      return true;
+    });
+  }
+
+  function saveName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = String(new FormData(event.currentTarget).get("name")).trim();
+    return run(async () => {
+      const result = await authClient.updateUser({ name });
+      if (result.error) {
+        setError("No pudimos guardar tu nombre. Vuelve a intentar.");
+        return false;
+      }
+      return true;
+    });
+  }
+
+  function submitPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    const address = email.trim().toLowerCase();
+    const password = String(fields.get("password"));
+    return run(async () => {
+      const result = signingUp
+        ? await authClient.signUp.email({
+            email: address,
+            password,
+            name: String(fields.get("name")).trim(),
+          })
+        : await authClient.signIn.email({ email: address, password });
+      if (!result.error) return true;
+      setError(
+        result.error.status === 429
+          ? tooManyAttempts
+          : signingUp
+            ? "No pudimos crear la cuenta. Si ya tienes una, ingresa."
+            : emailCodes
+              ? "Correo o contraseña incorrectos. Si no tienes contraseña, ingresa con un código."
+              : "Correo o contraseña incorrectos.",
+      );
+      return false;
+    });
+  }
+
+  const submitButton = (label: string) => (
+    <button
+      className={buttonClass({ block: true, className: "mt-1" })}
+      disabled={loading}
+    >
+      {loading && (
+        <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+      )}
+      {label}
+    </button>
+  );
+
+  const exploreLink = (
+    <Link
+      className="mt-6 self-center text-sm font-medium text-muted transition-colors hover:text-action"
+      href="/"
+    >
+      Seguir explorando sin cuenta
+    </Link>
+  );
+
+  const emailField = (
+    <Field label="Correo">
+      <input
+        ref={emailInput}
+        className={controlClass}
+        name="email"
+        type="email"
+        required
+        maxLength={200}
+        autoComplete="email"
+        placeholder="tu@correo.com"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+      />
+    </Field>
+  );
+
+  if (step === "email")
     return (
       <>
-        <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.04em]">
-          Revisa tu correo
-        </h1>
-        <p className="mt-2.5 text-[15px] leading-6 text-body">
-          Te enviamos un código de 6 dígitos a{" "}
-          <span className="font-semibold text-ink">{pending.email}</span>. Vence
-          en 10 minutos.
-        </p>
-        {notice && (
-          <p className="mt-4 text-sm font-medium text-ink" role="status">
-            {notice}
-          </p>
-        )}
-        <form className="mt-8 grid gap-4" onSubmit={verify}>
+        <Heading title="Ingresa a LinkUp">
+          Escribe tu correo y te enviamos un código para entrar. Si aún no
+          tienes cuenta, se crea en el mismo paso.
+        </Heading>
+        <form ref={form} className="mt-8 grid gap-4" onSubmit={requestCode}>
+          {emailField}
+          <FormError>{error}</FormError>
+          {submitButton("Continuar")}
+        </form>
+        <button
+          type="button"
+          className={cx(linkClass, "mt-5 self-center text-sm")}
+          disabled={loading}
+          onClick={() => go("password")}
+        >
+          Ingresar con contraseña
+        </button>
+        {exploreLink}
+      </>
+    );
+
+  if (step === "code")
+    return (
+      <>
+        <Heading title="Revisa tu correo">
+          Escribe el código de 6 dígitos que enviamos a{" "}
+          <span className="font-semibold text-ink">{email}</span>. Si no lo
+          ves, busca en spam.
+        </Heading>
+        <Notice>{notice}</Notice>
+        <form ref={form} className="mt-8 grid gap-4" onSubmit={verifyCode}>
           <Field label="Código">
             <input
-              ref={codeInput}
               className={cx(controlClass, "font-meta text-xl tracking-[0.3em]")}
               name="code"
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="[0-9]{6}"
-              minLength={6}
-              maxLength={6}
               required
+              onChange={(event) => {
+                // Accepts a pasted "123 456"; six digits submit on their own.
+                const input = event.currentTarget;
+                input.value = input.value.replace(/\D/g, "").slice(0, 6);
+                if (input.value.length === 6 && !loading)
+                  input.form?.requestSubmit();
+              }}
             />
           </Field>
-          {pending.purpose === "forget-password" && (
-            <Field
-              label="Nueva contraseña"
-              hint={`Mínimo ${MIN_PASSWORD_LENGTH} caracteres.`}
-            >
-              <input
-                className={controlClass}
-                name="newPassword"
-                type="password"
-                required
-                minLength={MIN_PASSWORD_LENGTH}
-                maxLength={128}
-                autoComplete="new-password"
-              />
-            </Field>
-          )}
           <FormError>{error}</FormError>
-          <button
-            className={buttonClass({ block: true, className: "mt-1" })}
-            disabled={loading}
-          >
-            {loading && (
-              <LoaderCircle
-                className="size-4 animate-spin"
-                aria-hidden="true"
-              />
-            )}
-            {pending.purpose === "sign-in"
-              ? "Ingresar"
-              : pending.purpose === "forget-password"
-                ? "Guardar contraseña e ingresar"
-                : "Confirmar correo"}
-          </button>
+          {submitButton("Ingresar")}
         </form>
-        <div className="mt-5 flex items-center justify-between gap-4 text-sm font-medium">
+        <div className="mt-5 flex items-center justify-between gap-4 text-sm">
           <button
             type="button"
-            className="text-action hover:underline"
-            disabled={loading}
-            onClick={resend}
+            className={cx(
+              linkClass,
+              "disabled:font-medium disabled:text-muted disabled:no-underline",
+            )}
+            disabled={loading || cooldown > 0}
+            onClick={() =>
+              run(async () => {
+                if (await sendCode(email))
+                  setNotice("Te enviamos un código nuevo.");
+                return false;
+              })
+            }
           >
-            Reenviar código
+            {cooldown > 0 ? `Reenviar en ${cooldown} s` : "Reenviar código"}
           </button>
           <button
             type="button"
-            className="text-muted hover:text-ink"
+            className="font-medium text-muted hover:text-ink"
             disabled={loading}
-            onClick={() => {
-              setPending(null);
-              setError("");
-              setNotice("");
-            }}
+            onClick={() => go("email")}
           >
-            Usar otro correo
+            Cambiar correo
           </button>
         </div>
+        {exploreLink}
+      </>
+    );
+
+  if (step === "name")
+    return (
+      <>
+        <Heading title="¿Cómo te llamas?">
+          Es el nombre que verán las startups cuando postules a sus vacantes.
+        </Heading>
+        <form ref={form} className="mt-8 grid gap-4" onSubmit={saveName}>
+          <Field label="Nombre y apellido">
+            <input
+              className={controlClass}
+              name="name"
+              required
+              minLength={2}
+              maxLength={100}
+              autoComplete="name"
+            />
+          </Field>
+          <FormError>{error}</FormError>
+          {submitButton("Continuar")}
+        </form>
       </>
     );
 
   return (
     <>
-      <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.04em]">
-        {resetting
-          ? "Elige una contraseña nueva"
-          : mode === "signup"
-            ? "Crea tu cuenta"
-            : "Ingresa a LinkUp"}
-      </h1>
-      <p className="mt-2.5 text-[15px] leading-6 text-body">
-        {resetting ? (
-          "Te enviaremos un código a tu correo para confirmar que eres tú."
-        ) : (
-          <>
-            {mode === "signup" && "Es gratis. "}Para guardar oportunidades,
-            crear alertas y seguir tus postulaciones.
-          </>
-        )}
-      </p>
-      {notice && (
-        <p className="mt-4 text-sm font-medium text-ink" role="status">
-          {notice}
-        </p>
-      )}
-      <div
-        className={cx(
-          "mt-8 grid grid-cols-2 rounded-full border border-line bg-surface p-1",
-          resetting && "hidden",
-        )}
-        role="group"
-        aria-label="Tipo de acceso"
+      <Heading
+        title={
+          emailCodes
+            ? "Ingresa con tu contraseña"
+            : signingUp
+              ? "Crea tu cuenta"
+              : "Ingresa a LinkUp"
+        }
       >
-        {(
-          [
-            ["signin", "Ingresar"],
-            ["signup", "Crear cuenta"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            disabled={loading}
-            aria-pressed={mode === value}
-            onClick={() => {
-              setMode(value);
-              setError("");
-            }}
-            className={cx(
-              "min-h-9 rounded-full text-sm font-semibold transition-colors",
-              mode === value
-                ? "border border-line bg-paper text-ink"
-                : "border border-transparent text-muted hover:text-ink",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <form className="mt-6 grid gap-4" onSubmit={submit}>
-        {mode === "signup" && !resetting && (
-          <Field label="Tu nombre">
+        {!emailCodes &&
+          "Para guardar oportunidades, crear alertas y seguir tus postulaciones."}
+      </Heading>
+      <form ref={form} className="mt-8 grid gap-4" onSubmit={submitPassword}>
+        {signingUp && (
+          <Field label="Nombre y apellido">
             <input
               className={controlClass}
               name="name"
@@ -372,88 +351,94 @@ export function AuthForm({
             />
           </Field>
         )}
-        <Field label="Correo">
+        {emailField}
+        <Field
+          label="Contraseña"
+          hint={
+            signingUp
+              ? `Mínimo ${MIN_PASSWORD_LENGTH} caracteres.`
+              : emailCodes
+                ? undefined
+                : // No email: an operator issues a temporary password
+                  // with `npm run password`.
+                  "¿La olvidaste? Pide una temporal a quien administra LinkUp."
+          }
+        >
           <input
             className={controlClass}
-            name="email"
-            type="email"
+            name="password"
+            type="password"
             required
-            maxLength={200}
-            autoComplete="email"
+            minLength={signingUp ? MIN_PASSWORD_LENGTH : 1}
+            maxLength={128}
+            autoComplete={signingUp ? "new-password" : "current-password"}
           />
         </Field>
-        {!usingCode && !resetting && (
-          <Field
-            label="Contraseña"
-            hint={
-              mode === "signup"
-                ? `Mínimo ${MIN_PASSWORD_LENGTH} caracteres.`
-                : emailCodes
-                  ? undefined
-                  : // No email: an operator issues a temporary password
-                    // with `npm run password`.
-                    "¿La olvidaste? Pide una temporal a quien administra LinkUp."
-            }
-          >
-            <input
-              className={controlClass}
-              name="password"
-              type="password"
-              required
-              minLength={mode === "signup" ? MIN_PASSWORD_LENGTH : 1}
-              maxLength={128}
-              autoComplete={
-                mode === "signup" ? "new-password" : "current-password"
-              }
-            />
-          </Field>
-        )}
-        {mode === "signin" && emailCodes && method === "password" && (
+        <FormError>{error}</FormError>
+        {submitButton(signingUp ? "Crear cuenta" : "Ingresar")}
+      </form>
+      {emailCodes ? (
+        <button
+          type="button"
+          className={cx(linkClass, "mt-5 self-center text-sm")}
+          disabled={loading}
+          onClick={() => {
+            // With the email already typed, the code goes out right away.
+            if (emailInput.current?.checkValidity())
+              run(async () => {
+                await sendCode(email.trim().toLowerCase());
+                return false;
+              });
+            else go("email");
+          }}
+        >
+          ¿Olvidaste tu contraseña? Ingresa con un código
+        </button>
+      ) : (
+        <p className="mt-5 self-center text-sm text-muted">
+          {signingUp ? "¿Ya tienes cuenta?" : "¿Primera vez en LinkUp?"}{" "}
           <button
             type="button"
-            className="-mt-2 justify-self-start text-[13px] text-muted hover:text-action"
+            className={linkClass}
+            disabled={loading}
             onClick={() => {
-              setMethod("reset");
+              setSigningUp(!signingUp);
               setError("");
             }}
           >
-            ¿Olvidaste tu contraseña?
+            {signingUp ? "Ingresa" : "Crea tu cuenta"}
           </button>
-        )}
-        <FormError>{error}</FormError>
-        <button
-          className={buttonClass({ block: true, className: "mt-1" })}
-          disabled={loading}
-        >
-          {loading && (
-            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-          )}
-          {usingCode || resetting
-            ? "Enviar código"
-            : mode === "signin"
-              ? "Ingresar"
-              : "Crear cuenta"}
-        </button>
-      </form>
-      {emailCodes && (
-        <button
-          type="button"
-          className="mt-5 self-center text-sm font-semibold text-action hover:underline"
-          disabled={loading}
-          onClick={() => {
-            setMethod(usingCode || resetting ? "password" : "code");
-            setError("");
-          }}
-        >
-          {resetting
-            ? "Volver a ingresar con contraseña"
-            : usingCode
-              ? "Usar contraseña"
-              : mode === "signin"
-                ? "Ingresar con un código por correo"
-                : "Crear la cuenta con un código, sin contraseña"}
-        </button>
+        </p>
+      )}
+      {exploreLink}
+    </>
+  );
+}
+
+function Heading({
+  title,
+  children,
+}: {
+  title: string;
+  children?: ReactNode;
+}) {
+  return (
+    <>
+      <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.04em]">
+        {title}
+      </h1>
+      {children && (
+        <p className="mt-2.5 text-[15px] leading-6 text-body">{children}</p>
       )}
     </>
+  );
+}
+
+function Notice({ children }: { children?: ReactNode }) {
+  if (!children) return null;
+  return (
+    <p className="mt-4 text-sm font-medium text-ink" role="status">
+      {children}
+    </p>
   );
 }

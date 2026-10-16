@@ -16,7 +16,7 @@ No existe una insignia genérica `Verificado`. Cada etiqueta dice qué se compro
 
 Hoy la interfaz muestra la fuente con su fecha de comprobación y, cuando corresponde, `Gestionada por LinkUp`. `Startup reclamada`, `Publicada por la startup` y `Resultado verificado` todavía no se muestran.
 
-Reclamar una startup exige cuenta y aprobación explícita de una persona administradora. Tener un correo del dominio no acredita representación. Con correo configurado (D-027), toda cuenta prueba que controla su dirección con un código de 6 dígitos; sin correo, una cuenta no prueba nada.
+Reclamar una startup exige cuenta y aprobación explícita de una persona administradora. Tener un correo del dominio no acredita representación. Con correo configurado (D-027, D-029), toda cuenta nace de un código de 6 dígitos enviado a su dirección, así que prueba que la controla; sin correo, una cuenta no prueba nada.
 
 ## Lo que la alfa ya hace
 
@@ -26,7 +26,7 @@ Reclamar una startup exige cuenta y aprobación explícita de una persona admini
 - Roles separados: administración, curaduría y, por startup, responsable, selección de personas y solo lectura. Nadie cambia su propio rol y cada startup conserva al menos una persona responsable.
 - Exportación de datos y eliminación de cuenta. Al eliminar, se borran perfil, guardados, alertas y postulaciones, y el historial de auditoría queda seudonimizado.
 - Mutaciones con cookie solo desde el mismo origen; límite de 2 MB por envío; límite de intentos de acceso.
-- Códigos de 6 dígitos que vencen en 10 minutos, admiten 3 intentos y se guardan como hash, nunca en claro. Pedir un código no revela si el correo tiene cuenta, y registrarse con un correo ya usado responde igual que uno nuevo (a quien lo usa le llega un aviso).
+- Códigos de 6 dígitos que vencen en 10 minutos, admiten 3 intentos y se guardan como hash, nunca en claro. Pedir un código no revela si el correo tiene cuenta. Con correo configurado no se registran cuentas con contraseña, así que nadie puede ocupar el correo de otra persona.
 
 ## Menores de edad
 

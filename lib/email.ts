@@ -62,17 +62,3 @@ export function codeEmail(to: string, code: string, purpose: CodePurpose) {
     ].join("\n"),
   };
 }
-
-export function existingAccountEmail(to: string) {
-  return {
-    to,
-    subject: "Ya tienes una cuenta en LinkUp",
-    text: [
-      "Alguien intentó crear una cuenta en LinkUp con este correo, pero ya tienes una.",
-      "",
-      "Ingresa con tu contraseña o pide un código por correo en la página de ingreso.",
-      "",
-      "Si no fuiste tú, ignora este correo.",
-    ].join("\n"),
-  };
-}

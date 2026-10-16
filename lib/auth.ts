@@ -13,12 +13,7 @@ import {
   authVerification,
 } from "@/db/schema";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth-policy";
-import {
-  codeEmail,
-  emailEnabled,
-  existingAccountEmail,
-  sendEmail,
-} from "@/lib/email";
+import { codeEmail, emailEnabled, sendEmail } from "@/lib/email";
 
 function localSecret() {
   if (process.env.BETTER_AUTH_SECRET) return process.env.BETTER_AUTH_SECRET;
@@ -41,11 +36,9 @@ function localSecret() {
 }
 
 function options(): BetterAuthOptions {
-  // With email, every account proves its address with a 6-digit code: when
-  // created with a password, and on each code sign-in. Requiring it for
-  // password accounts also matters because a code sign-in into an unproven
-  // account deletes that account's password (Better Auth's protection
-  // against someone registering another person's email first).
+  // With email, accounts are created only by signing in with a 6-digit code,
+  // so every account has proven its address. A password is optional and is
+  // added afterwards with another code (Mi LinkUp → Perfil).
   const email = emailEnabled();
   // Production sets BETTER_AUTH_URL. Preview deployments have no fixed
   // address, so their deployment and branch URLs are trusted instead.
@@ -74,26 +67,18 @@ function options(): BetterAuthOptions {
     session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
     emailAndPassword: {
       enabled: true,
+      disableSignUp: email,
       minPasswordLength: MIN_PASSWORD_LENGTH,
       maxPasswordLength: 128,
-      requireEmailVerification: email,
       // A password reset by email code closes every open session.
       revokeSessionsOnPasswordReset: true,
-      // Sign-up answers the same for new and existing emails; tell the owner.
-      onExistingUserSignUp: email
-        ? ({ user }) => sendEmail(existingAccountEmail(user.email))
-        : undefined,
     },
-    emailVerification: email
-      ? { sendOnSignIn: true, autoSignInAfterVerification: true }
-      : undefined,
     plugins: email
       ? [
           emailOTP({
             otpLength: 6,
             expiresIn: 10 * 60,
             storeOTP: "hashed",
-            overrideDefaultEmailVerification: true,
             sendVerificationOTP: ({ email: to, otp, type }) =>
               sendEmail(codeEmail(to, otp, type)),
           }),

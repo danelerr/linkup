@@ -124,55 +124,23 @@ try {
   }
 
   const signInPage = await (await fetch(`${origin}/ingresar`)).text();
-  assert.match(signInPage, /Ingresar con un código por correo/);
-  assert.match(signInPage, /¿Olvidaste tu contraseña\?/);
-  check("the sign-in page offers an email code next to the password");
+  assert.match(signInPage, />Continuar</);
+  assert.match(signInPage, /Ingresar con contraseña/);
+  assert.doesNotMatch(signInPage, /name="password"/);
+  assert.doesNotMatch(signInPage, /Crear cuenta/);
+  check("the sign-in page asks only for the email; the password is an option");
+
+  const sentBeforeSignUp = outbox.length;
+  const passwordSignUp = await api("/api/auth/sign-up/email", "POST", {
+    email: "eva@example.test",
+    password: "clave",
+    name: "Eva",
+  });
+  assert.equal(passwordSignUp.response.status, 400);
+  assert.equal(outbox.length, sentBeforeSignUp);
+  check("accounts are not created with a password while codes are available");
 
   const ana = "ana@example.test";
-  const signUp = await api("/api/auth/sign-up/email", "POST", {
-    email: ana,
-    password: "clave",
-    name: "Ana",
-  });
-  assert.equal(signUp.response.status, 200, JSON.stringify(signUp.data));
-  assert.equal(signUp.data.token, null);
-  assert.equal(sessionCookie(signUp.response).includes("session_token"), false);
-  const welcome = outbox.at(-1);
-  assert(welcome);
-  assert.deepEqual(welcome.to, [ana]);
-  assert.equal(welcome.from, "LinkUp <pruebas@example.test>");
-  assert.match(welcome.subject, /^\d{6} es tu código de LinkUp$/);
-  assert.match(welcome.text, /confirmar tu correo/);
-  assert.equal(authorizations.at(-1), "Bearer re_test_key");
-  const sentBeforeSignIn = outbox.length;
-  const beforeConfirming = await api("/api/auth/sign-in/email", "POST", {
-    email: ana,
-    password: "clave",
-  });
-  assert.equal(beforeConfirming.response.status, 403);
-  assert.equal(beforeConfirming.data.code, "EMAIL_NOT_VERIFIED");
-  assert.equal(outbox.length, sentBeforeSignIn + 1, "sends a new code");
-  const code = latestCode(ana);
-  const wrong = await api("/api/auth/email-otp/verify-email", "POST", {
-    email: ana,
-    otp: code === "000000" ? "111111" : "000000",
-  });
-  assert.equal(wrong.response.status, 400);
-  const confirmed = await api("/api/auth/email-otp/verify-email", "POST", {
-    email: ana,
-    otp: code,
-  });
-  assert.equal(confirmed.response.status, 200, JSON.stringify(confirmed.data));
-  const confirmedCookie = sessionCookie(confirmed.response);
-  assert.equal(
-    (await api("/api/profile", "GET", undefined, confirmedCookie)).response
-      .status,
-    200,
-  );
-  check(
-    "a password account confirms its email with a 6-digit code before its first session",
-  );
-
   assert.equal(
     (
       await api("/api/auth/email-otp/send-verification-otp", "POST", {
@@ -182,82 +150,95 @@ try {
     ).response.status,
     200,
   );
-  const codeSignIn = await api("/api/auth/sign-in/email-otp", "POST", {
+  const welcome = outbox.at(-1);
+  assert(welcome);
+  assert.deepEqual(welcome.to, [ana]);
+  assert.equal(welcome.from, "LinkUp <pruebas@example.test>");
+  assert.match(welcome.subject, /^\d{6} es tu código de LinkUp$/);
+  assert.match(welcome.text, /ingresar a LinkUp/);
+  assert.equal(authorizations.at(-1), "Bearer re_test_key");
+  const code = latestCode(ana);
+  const wrong = await api("/api/auth/sign-in/email-otp", "POST", {
+    email: ana,
+    otp: code === "000000" ? "111111" : "000000",
+  });
+  assert.equal(wrong.response.status, 400);
+  const created = await api("/api/auth/sign-in/email-otp", "POST", {
+    email: ana,
+    otp: code,
+  });
+  assert.equal(created.response.status, 200, JSON.stringify(created.data));
+  assert.equal(created.data.user.name, "");
+  const createdCookie = sessionCookie(created.response);
+  assert.equal(
+    (await api("/api/profile", "GET", undefined, createdCookie)).response
+      .status,
+    200,
+  );
+  const displayName = async () =>
+    (await db.query("SELECT display_name FROM users WHERE email=$1", [ana]))
+      .rows[0]?.display_name;
+  assert.equal(await displayName(), "ana");
+  const named = await api(
+    "/api/auth/update-user",
+    "POST",
+    { name: "Ana Pérez" },
+    createdCookie,
+  );
+  assert.equal(named.response.status, 200, JSON.stringify(named.data));
+  await api("/api/profile", "GET", undefined, createdCookie);
+  assert.equal(await displayName(), "Ana Pérez");
+  check("a code creates the account the first time; the name comes right after");
+
+  await api("/api/auth/email-otp/request-password-reset", "POST", {
+    email: ana,
+  });
+  assert.match(outbox.at(-1)?.text ?? "", /elegir una contraseña nueva/);
+  const firstPassword = await api(
+    "/api/auth/email-otp/reset-password",
+    "POST",
+    { email: ana, otp: latestCode(ana), password: "clave" },
+  );
+  assert.equal(
+    firstPassword.response.status,
+    200,
+    JSON.stringify(firstPassword.data),
+  );
+  const { rows: providers } = await db.query<{ provider: string }>(
+    "SELECT a.provider_id AS provider FROM auth_account a JOIN auth_user u ON u.id = a.user_id WHERE u.email = $1",
+    [ana],
+  );
+  assert.deepEqual(
+    providers.map((row) => row.provider),
+    ["credential"],
+  );
+  const withPassword = await api("/api/auth/sign-in/email", "POST", {
+    email: ana,
+    password: "clave",
+  });
+  assert.equal(withPassword.response.status, 200);
+  check("an account created with a code can add a password with another code");
+
+  await api("/api/auth/email-otp/send-verification-otp", "POST", {
+    email: ana,
+    type: "sign-in",
+  });
+  const codeAgain = await api("/api/auth/sign-in/email-otp", "POST", {
     email: ana,
     otp: latestCode(ana),
   });
-  assert.equal(
-    codeSignIn.response.status,
-    200,
-    JSON.stringify(codeSignIn.data),
-  );
-  assert.equal(
-    (
-      await api(
-        "/api/profile",
-        "GET",
-        undefined,
-        sessionCookie(codeSignIn.response),
-      )
-    ).response.status,
-    200,
-  );
+  assert.equal(codeAgain.response.status, 200, JSON.stringify(codeAgain.data));
   const passwordAgain = await api("/api/auth/sign-in/email", "POST", {
     email: ana,
     password: "clave",
   });
   assert.equal(passwordAgain.response.status, 200);
-  check("a confirmed account signs in with a code and keeps its password");
-
-  const beto = "beto@example.test";
-  await api("/api/auth/email-otp/send-verification-otp", "POST", {
-    email: beto,
-    type: "sign-in",
-  });
-  const created = await api("/api/auth/sign-in/email-otp", "POST", {
-    email: beto,
-    otp: latestCode(beto),
-    name: "Beto",
-  });
-  assert.equal(created.response.status, 200, JSON.stringify(created.data));
-  assert.equal(
-    (
-      await api(
-        "/api/profile",
-        "GET",
-        undefined,
-        sessionCookie(created.response),
-      )
-    ).response.status,
-    200,
-  );
-  assert.deepEqual(
-    (await db.query("SELECT display_name FROM users WHERE email=$1", [beto]))
-      .rows,
-    [{ display_name: "Beto" }],
-  );
-  check("a code creates the account the first time, with the name given");
-
-  const sentBefore = outbox.length;
-  const duplicate = await api("/api/auth/sign-up/email", "POST", {
-    email: ana,
-    password: "otra-clave",
-    name: "Otra persona",
-  });
-  assert.equal(duplicate.response.status, 200);
-  assert.equal(duplicate.data.token, null);
-  assert.equal(outbox.length, sentBefore + 1);
-  assert.equal(outbox.at(-1)?.subject, "Ya tienes una cuenta en LinkUp");
-  assert.doesNotMatch(outbox.at(-1)?.text ?? "", /^\d{6}$/m);
-  check(
-    "signing up with a registered email looks the same and tells the owner instead",
-  );
+  check("signing in with a code keeps the password");
 
   const anaSession = sessionCookie(passwordAgain.response);
   await api("/api/auth/email-otp/request-password-reset", "POST", {
     email: ana,
   });
-  assert.match(outbox.at(-1)?.text ?? "", /elegir una contraseña nueva/);
   const reset = await api("/api/auth/email-otp/reset-password", "POST", {
     email: ana,
     otp: latestCode(ana),
@@ -276,33 +257,6 @@ try {
   check(
     "a forgotten password is replaced with an email code, closing open sessions",
   );
-
-  await api("/api/auth/email-otp/request-password-reset", "POST", {
-    email: beto,
-  });
-  const firstPassword = await api(
-    "/api/auth/email-otp/reset-password",
-    "POST",
-    {
-      email: beto,
-      otp: latestCode(beto),
-      password: "beto-clave",
-    },
-  );
-  assert.equal(
-    firstPassword.response.status,
-    200,
-    JSON.stringify(firstPassword.data),
-  );
-  const { rows: providers } = await db.query<{ provider: string }>(
-    "SELECT a.provider_id AS provider FROM auth_account a JOIN auth_user u ON u.id = a.user_id WHERE u.email = $1",
-    [beto],
-  );
-  assert.deepEqual(
-    providers.map((row) => row.provider),
-    ["credential"],
-  );
-  check("an account created with a code can add a password with another code");
 
   const rejected = await api(
     "/api/auth/email-otp/send-verification-otp",

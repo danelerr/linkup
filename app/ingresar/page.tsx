@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { Brand } from "@/components/brand";
@@ -19,8 +18,6 @@ export default async function SignInPage({
 }) {
   const params = await searchParams;
   const returnTo = safeRelativeReturnPath(params.return_to || "/mi-linkup");
-  // Actions that need an account send people here with ?cuenta=nueva.
-  const newAccount = params.cuenta === "nueva";
   if (await getCurrentUser()) redirect(returnTo);
   return (
     <main
@@ -31,15 +28,10 @@ export default async function SignInPage({
       <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12">
         <AuthForm
           returnTo={returnTo}
-          initialMode={newAccount ? "signup" : "signin"}
           emailCodes={emailEnabled()}
+          // Actions that need an account send people here with ?cuenta=nueva.
+          newAccount={params.cuenta === "nueva"}
         />
-        <Link
-          className="mt-6 self-center text-sm font-medium text-muted transition-colors hover:text-action"
-          href="/"
-        >
-          Seguir explorando sin cuenta
-        </Link>
       </div>
     </main>
   );
